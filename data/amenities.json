@@ -1,0 +1,44 @@
+{
+  "amenities": [
+    {
+      "id": 1,
+      "name": "Wi-Fi",
+      "icon": "wifi"
+    },
+    {
+      "id": 2,
+      "name": "Swimming Pool",
+      "icon": "pool"
+    },
+    {
+      "id": 3,
+      "name": "Air conditioning",
+      "icon": "air"
+    },
+    {
+      "id": 4,
+      "name": "Microwave",
+      "icon": "microwave"
+    },
+    {
+      "id": 5,
+      "name": "Free Breakfast",
+      "icon": "breakfast"
+    },
+    {
+      "id": 6,
+      "name": "Room Service",
+      "icon": "service"
+    },
+    {
+      "id": 7,
+      "name": "Minibar",
+      "icon": "minibar"
+    },
+    {
+      "id": 8,
+      "name": "Gym",
+      "icon": "gym"
+    }
+  ]
+}

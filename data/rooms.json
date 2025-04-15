@@ -1,0 +1,58 @@
+{
+  "rooms": [
+    {
+      "id": 1,
+      "type": "Single Room",
+      "description": "Cozy room with a single bed, suitable for solo visitors.",
+      "price": 150,
+      "image": "/images/rooms/single.jpg",
+      "amenities": ["Free Wi-Fi", "Free Breakfast", "Pool"],
+      "capacity": 1
+    },
+    {
+      "id": 2,
+      "type": "Twin Room",
+      "description": "Comfortable room with two-double beds, ideal for couples.",
+      "price": 150,
+      "image": "/images/rooms/twin.jpg",
+      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool"],
+      "capacity": 2
+    },
+    {
+      "id": 3,
+      "type": "Deluxe Room",
+      "description": "Spacious room featuring a separate living area, Sofa bed, and Queen size bed. Suitable for small families.",
+      "price": 250,
+      "image": "/images/rooms/deluxe.jpg",
+      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool"],
+      "capacity": 3
+    },
+    {
+      "id": 4,
+      "type": "King Suite Room",
+      "description": "Luxurious room with a living area, Sofa bed, King size bed, kitchenette, and a bar area.",
+      "price": 400,
+      "image": "/images/rooms/king-suite.jpg",
+      "amenities": ["Free Wi-Fi", "Free Breakfast", "Pool"],
+      "capacity": 4
+    },
+    {
+      "id": 5,
+      "type": "Executive Suite",
+      "description": "Premium suite with panoramic city views, separate bedroom, and luxurious amenities.",
+      "price": 550,
+      "image": "/images/rooms/executive.jpg",
+      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool", "Minibar", "Room Service"],
+      "capacity": 2
+    },
+    {
+      "id": 6,
+      "type": "Family Room",
+      "description": "Spacious accommodation with two bedrooms, perfect for families traveling together.",
+      "price": 350,
+      "image": "/images/rooms/family.jpg",
+      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool", "Microwave"],
+      "capacity": 5
+    }
+  ]
+}
