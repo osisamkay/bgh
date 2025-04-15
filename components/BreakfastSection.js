@@ -1,27 +1,35 @@
 export default function BreakfastSection() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-16">
-      <div className="grid grid-cols-2 gap-12 items-center">
-        <div>
+    <div className="container mx-auto px-4 py-12">
+      <div className="flex flex-col md:flex-row overflow-hidden ">
+        {/* Left side - Image */}
+        <div className="md:w-1/2">
           <img 
-            src="/images/breakfast.jpg" 
-            alt="Delicious breakfast spread" 
-            className="w-full h-[400px] object-cover rounded-lg shadow-lg"
+            src="/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Homepage - Free Breakfast.jpg" 
+            alt="Delicious breakfast pastries" 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = '/images/breakfast.jpg';
+            }}
           />
         </div>
-        <div>
-          <h2 className="text-2xl font-bold mb-6">COMPLIMENTARY BREAKFAST & PARKING</h2>
-          <p className="text-gray-600 leading-relaxed mb-6">
-            Start your day right with our complimentary daily breakfast, including a wide selection of eggs, breakfast meats, fresh breads and pastries, yogurt, hot cereal, fresh fruit, juices, and coffee. All served in our sunny breakfast area from 6:30am-10:00am (7:00am-10:30am on weekends). All guests enjoy complimentary parking.
+        
+        {/* Right side - Text content */}
+        <div className="md:w-1/2 bg-white p-8 flex flex-col justify-center">
+          <h2 className="text-3xl font-bold mb-6 tracking-wide">COMPLIMENTARY BREAKFAST & PARKING</h2>
+          
+          <div className="w-16 h-1 bg-gray-800 mb-6"></div>
+          
+          <p className="text-gray-700 leading-relaxed mb-6">
+            Get your day started with our complimentary buffet breakfast, including a daily rotation of eggs, breakfast meats, breakfast breads and pastries, yogurts, hot oatmeal, fresh fruit, juices, coffee and more. Served Monday to Sunday from 6:30am-10:00am. All guests enjoy complimentary parking.
           </p>
-          <button className="text-[#1a472a] font-medium hover:text-[#143521] transition-colors flex items-center">
-            Learn more
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
+          
+          <a href="#" className="text-blue-700 font-medium text-lg hover:underline flex items-center mt-2">
+            Learn more <span className="ml-1">&gt;</span>
+          </a>
         </div>
       </div>
     </div>
-  )
+  );
 }

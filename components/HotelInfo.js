@@ -1,8 +1,13 @@
+import React from 'react';
+
 export default function HotelInfo() {
   return (
-    <div className="text-center my-8">
-      <h1 className="text-3xl font-bold mb-4">BEST GARDEN HOTEL</h1>
-      <div className="flex justify-center items-center gap-3">
+    <div className="text-center my-6 sm:my-8 px-4">
+      <h1 className="text-4xl font-bold mb-3">BEST GARDEN HOTEL</h1>
+      <div className="flex justify-center items-center gap-3 mb-4">
+        <div className="flex items-center bg-gray-800 text-white px-2 py-1 rounded">
+          <span className="font-bold">4.5</span>
+        </div>
         <div className="flex">
           {[1, 2, 3, 4, 5].map((star) => (
             <svg key={star} xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -10,13 +15,9 @@ export default function HotelInfo() {
             </svg>
           ))}
         </div>
-        <span className="text-lg font-semibold">4.85</span>
-        <span className="text-gray-600">(956 Reviews)</span>
+        <span className="font-medium text-lg">4.5/5</span>
+        <span className="text-gray-600">1795 Reviews</span>
       </div>
-      <p className="mt-8 text-lg max-w-3xl mx-auto">
-        CANADA'S TOP DESTINATION FOR<br />
-        A BLEND OF ELEGANCE AND COMFORT
-      </p>
     </div>
-  )
+  );
 }

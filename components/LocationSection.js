@@ -15,31 +15,25 @@ export default function LocationSection() {
         ></iframe>
       </div>
       
-      <div className="grid grid-cols-3 gap-8">
+      <div className="flex flex-col md:flex-row justify-between gap-4">
         <div>
-          <h3 className="font-medium text-gray-900 mb-2">Contact</h3>
           <p className="text-gray-600 mb-1">Front Desk: 1-888-673-7987</p>
           <p className="text-gray-600">Email: info@bgh.ca</p>
         </div>
-        
+         <div className="border-t-2 md:border-l-2 border-black"></div>
         <div>
-          <h3 className="font-medium text-gray-900 mb-2">Address</h3>
-          <p className="text-gray-600 mb-2">BGH Hall mall, Ottawa ON</p>
+          <p className="text-gray-600 mb-2">666 Hell Road, Ontario N1L 3H7</p>
           <div className="space-y-1">
             <button className="text-[#1a472a] hover:text-[#143521] transition-colors block">
-              Get directions
-            </button>
-            <button className="text-[#1a472a] hover:text-[#143521] transition-colors block">
-              Parking and transportation
+              Parking and transportation details
             </button>
           </div>
         </div>
-        
+        <div className="border-t-2 md:border-l-2 border-black"></div>
         <div>
-          <h3 className="font-medium text-gray-900 mb-2">Hours</h3>
           <p className="text-gray-600 mb-1">Check-in: 4:00 PM</p>
           <p className="text-gray-600 mb-1">Check-out: 11:00 AM</p>
-          <p className="text-gray-600">Cancel by 6:00 PM hotel time</p>
+          <p className="text-gray-600">Minimum check-in age:18</p>
         </div>
       </div>
     </div>

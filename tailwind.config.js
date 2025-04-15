@@ -20,7 +20,22 @@ module.exports = {
           900: '#78350f',
         },
       },
+      textShadow: {
+        DEFAULT: '0 2px 4px rgba(0, 0, 0, 0.5)',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      const newUtilities = {
+        '.text-shadow': {
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+        },
+        '.text-shadow-lg': {
+          textShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+        },
+      }
+      addUtilities(newUtilities)
+    }
+  ],
 }

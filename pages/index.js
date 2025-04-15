@@ -10,7 +10,6 @@ import OffersSection from '../components/OffersSection'
 import EventsSection from '../components/EventsSection'
 import LocationSection from '../components/LocationSection'
 import BreakfastSection from '../components/BreakfastSection'
-import SocialLinks from '../components/SocialLinks'
 import Footer from '../components/Footer'
 
 export default function Home() {
@@ -26,7 +25,7 @@ export default function Home() {
       <ImageSlider />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6 sm:py-8">
         <HotelInfo />
         <SearchBox />
         <AmenitiesSection />
@@ -35,7 +34,6 @@ export default function Home() {
         <EventsSection />
         <LocationSection />
         <BreakfastSection />
-        <SocialLinks />
       </main>
 
       <Footer />
