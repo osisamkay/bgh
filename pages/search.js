@@ -47,6 +47,9 @@ export default function Search() {
   const [nights, setNights] = useState(1);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const datePickerRef = useRef(null);
+  const [email, setEmail] = useState('');
+  const [notificationStatus, setNotificationStatus] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
 
   // Separate handlers for min and max price
   const handleMinPriceChange = (e) => {
@@ -199,6 +202,40 @@ export default function Search() {
         rate: ratePreference
       }
     }, undefined, { shallow: true });
+  };
+
+  // Add subscription handler
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    setIsSubscribing(true);
+    setNotificationStatus('');
+
+    try {
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          priceRange,
+          roomType: selectedRoomTypes.length > 0 ? selectedRoomTypes.join(', ') : null,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setNotificationStatus('success');
+        setEmail('');
+      } else {
+        setNotificationStatus('error');
+      }
+    } catch (error) {
+      setNotificationStatus('error');
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   return (
@@ -495,6 +532,46 @@ export default function Search() {
             >
               Reset all filters
             </button>
+
+            {/* Email Notification Form */}
+            <div className="mt-8 p-4 bg-white rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4">Price Alert Notifications</h3>
+              <form onSubmit={handleSubscribe}>
+                <div className="mb-4">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:border-[#d4af37]"
+                    placeholder="your@email.com"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubscribing}
+                  className={`w-full bg-[#d4af37] text-white py-2 px-4 rounded-md hover:bg-[#c4a137] transition-colors ${
+                    isSubscribing ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isSubscribing ? 'Subscribing...' : 'Get Price Alerts'}
+                </button>
+                {notificationStatus === 'success' && (
+                  <p className="mt-2 text-sm text-green-600">
+                    Successfully subscribed to price alerts!
+                  </p>
+                )}
+                {notificationStatus === 'error' && (
+                  <p className="mt-2 text-sm text-red-600">
+                    Error subscribing to alerts. Please try again.
+                  </p>
+                )}
+              </form>
+            </div>
           </div>
           
           {/* Results Section */}
