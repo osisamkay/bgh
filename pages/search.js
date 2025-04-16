@@ -48,9 +48,17 @@ export default function Search() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const datePickerRef = useRef(null);
 
-  // Function to handle price range slider changes
-  const handlePriceRangeChange = (min, max) => {
-    setPriceRange([min, max]);
+  // Separate handlers for min and max price
+  const handleMinPriceChange = (e) => {
+    console.log('Min price change:', e.target.value);
+    const value = Math.min(Number(e.target.value), priceRange[1] - 1);
+    setPriceRange([value, priceRange[1]]);
+  };
+
+  const handleMaxPriceChange = (e) => {
+    console.log('Max price change:', e.target.value);
+    const value = Math.max(Number(e.target.value), priceRange[0] + 1);
+    setPriceRange([priceRange[0], value]);
   };
 
   // Read query parameters when the router is ready
@@ -87,7 +95,7 @@ export default function Search() {
     };
   }, []);
 
-  // Apply filters and sort whenever the filter criteria change
+  // Filter rooms by price
   useEffect(() => {
     let results = [...roomsData.rooms];
 
@@ -191,22 +199,6 @@ export default function Search() {
         rate: ratePreference
       }
     }, undefined, { shallow: true });
-  };
-
-  // Handle price slider change
-  const handlePriceSliderChange = (e) => {
-    const value = parseInt(e.target.value);
-    const isMin = e.target.dataset.type === 'min';
-    
-    if (isMin) {
-      if (value < priceRange[1]) {
-        setPriceRange([value, priceRange[1]]);
-      }
-    } else {
-      if (value > priceRange[0]) {
-        setPriceRange([priceRange[0], value]);
-      }
-    }
   };
 
   return (
@@ -361,48 +353,83 @@ export default function Search() {
             
             {/* Price Filter */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-4">Price</h3>
-              <div className="relative h-2 mb-8">
-                {/* Background track */}
-                <div className="absolute h-full w-full bg-gray-200 rounded"></div>
-                
-                {/* Active track */}
-                <div 
-                  className="absolute h-full bg-amber-500 rounded"
-                  style={{
-                    left: `${(priceRange[0] / maxPrice) * 100}%`,
-                    right: `${100 - (priceRange[1] / maxPrice) * 100}%`
-                  }}
-                ></div>
+              <h3 className="font-semibold mb-4">Price Range</h3>
+              <div className="relative">
+                <style jsx>{`
+                  input[type="range"] {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    background: transparent;
+                  }
+                  input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    height: 18px;
+                    width: 18px;
+                    border-radius: 50%;
+                    border: 2px solid #d4af37;
+                    background: #d4af37;
+                    cursor: pointer;
+                    pointer-events: auto;
+                    margin-top: -6px;
+                  }
+                  input[type="range"]::-moz-range-thumb {
+                    height: 18px;
+                    width: 18px;
+                    border-radius: 50%;
+                    border: 2px solid #d4af37;
+                    background: #d4af37;
+                    cursor: pointer;
+                    pointer-events: auto;
+                  }
+                `}</style>
+                <div className="relative h-[50px]">
+                  {/* Base track */}
+                  <div className="absolute w-full h-[5px] top-1/2 -translate-y-1/2 bg-[#d4af37] rounded"></div>
+                  
+                  {/* Selected range */}
+                  <div 
+                    className="absolute h-[5px] top-1/2 -translate-y-1/2 bg-[#d4af37] rounded"
+                    style={{
+                      left: `${(priceRange[0] / maxPrice) * 100}%`,
+                      width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`
+                    }}
+                  ></div>
 
-                {/* Min handle */}
-                <input
-                  type="range"
-                  min="0"
-                  max={maxPrice}
-                  value={priceRange[0]}
-                  data-type="min"
-                  onChange={handlePriceSliderChange}
-                  className="absolute w-full h-full opacity-0 cursor-pointer"
-                />
-
-                {/* Max handle */}
-                <input
-                  type="range"
-                  min="0"
-                  max={maxPrice}
-                  value={priceRange[1]}
-                  data-type="max"
-                  onChange={handlePriceSliderChange}
-                  className="absolute w-full h-full opacity-0 cursor-pointer"
-                />
-
-                {/* Price labels */}
-                <div className="absolute -bottom-8 left-0 transform -translate-x-1/2">
-                  <span className="text-sm font-medium">${priceRange[0]}</span>
+                  {/* Range inputs */}
+                  <input
+                    type="range"
+                    min="0"
+                    max={maxPrice}
+                    value={priceRange[0]}
+                    onChange={(e) => {
+                      const value = Math.min(Number(e.target.value), priceRange[1] - 1);
+                      setPriceRange([value, priceRange[1]]);
+                    }}
+                    className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ zIndex: 1 }}
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max={maxPrice}
+                    value={priceRange[1]}
+                    onChange={(e) => {
+                      const value = Math.max(Number(e.target.value), priceRange[0] + 1);
+                      setPriceRange([priceRange[0], value]);
+                    }}
+                    className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ zIndex: 2 }}
+                  />
                 </div>
-                <div className="absolute -bottom-8 right-0 transform translate-x-1/2">
-                  <span className="text-sm font-medium">${priceRange[1]}</span>
+                
+                {/* Price labels */}
+                <div className="flex justify-between mt-4">
+                  <span className="text-sm font-medium bg-white px-2 py-1 rounded shadow-sm border">
+                    ${priceRange[0]}
+                  </span>
+                  <span className="text-sm font-medium bg-white px-2 py-1 rounded shadow-sm border">
+                    ${priceRange[1]}
+                  </span>
                 </div>
               </div>
             </div>
