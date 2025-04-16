@@ -1,144 +1,118 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../../components/Header';
-import RoomImagePlaceholder from '../../components/RoomImagePlaceholder';
 import roomsData from '../../data/rooms.json';
+import { useNotification } from '../../context/NotificationContext';
 
-export default function ReserveRoom() {
+export default function ReservationPage() {
   const router = useRouter();
   const { id } = router.query;
-  
-  // Form state
+  const [room, setRoom] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     specialRequests: '',
-    termsAccepted: false
+    acceptedTerms: false
   });
-  
-  // Room data
-  const [room, setRoom] = useState(null);
-  
-  // UI state
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  // Mock images for the room
-  const roomImages = ['/images/rooms/room1.jpg', '/images/rooms/room2.jpg', '/images/rooms/room3.jpg'];
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addNotification } = useNotification();
 
-  // Fetch room data when the ID is available
   useEffect(() => {
     if (id) {
-      // Find the room by ID
       const selectedRoom = roomsData.rooms.find(r => r.id === parseInt(id));
-      setRoom(selectedRoom || null);
+      if (selectedRoom) {
+        setRoom(selectedRoom);
+        setIsLoading(false);
+      } else {
+        router.push('/search');
+      }
     }
-  }, [id]);
+  }, [id, router]);
 
-  // Handle image navigation
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? roomImages.length - 1 : prev - 1));
-  };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === roomImages.length - 1 ? 0 : prev + 1));
-  };
-
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value
-    });
+    }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
     if (!formData.fullName.trim()) {
-      setError('Please enter your full name');
+      addNotification('Please enter your full name', 'warning');
       return;
     }
-    
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
+    if (!formData.email.trim()) {
+      addNotification('Please enter your email address', 'warning');
       return;
     }
-    
-    if (!formData.phone.trim()) {
-      setError('Please enter your phone number');
+    if (!formData.phoneNumber.trim()) {
+      addNotification('Please enter your phone number', 'warning');
       return;
     }
-    
-    if (!formData.termsAccepted) {
-      setError('You must accept the terms and conditions');
+    if (!formData.specialRequests.trim()) {
+      addNotification('Please enter special requests', 'warning');
       return;
     }
-    
-    setIsLoading(true);
-    setError(null);
-    
+    if (!formData.acceptedTerms) {
+      addNotification('Please accept the terms and conditions', 'warning');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      // Prepare the reservation data
       const reservationData = {
         ...formData,
-        roomId: parseInt(id),
+        roomId: id,
         roomType: room.type,
         price: room.price,
-        checkInDate: router.query.checkIn || '07/07/2025',
-        checkOutDate: router.query.checkOut || '07/17/2025',
-        guests: parseInt(router.query.guests) || 2,
-        rooms: parseInt(router.query.rooms) || 1
+        reservationDate: new Date().toISOString(),
+        status: 'pending'
       };
-      
-      // Send the reservation data to the API
+
       const response = await fetch('/api/reservations', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(reservationData)
+        body: JSON.stringify(reservationData),
       });
-      
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create reservation');
+        throw new Error(data.message || 'Failed to create reservation');
       }
-      
-      const result = await response.json();
-      
-      // Show success message
-      setSuccess(true);
-      
-      // Redirect to confirmation page after a delay
-      setTimeout(() => {
-        router.push({
-          pathname: '/reservation-confirmation',
-          query: { id: result.id }
-        });
-      }, 2000);
-      
+
+      addNotification('Reservation created successfully!', 'success');
+      router.push(`/reservation-confirmation?id=${data.id}`);
     } catch (error) {
-      console.error('Error creating reservation:', error);
-      setError('Failed to submit reservation. Please try again.');
+      setError(error.message || 'Failed to create reservation. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (!room) {
+  if (isLoading || !room) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <p className="text-center text-lg">Loading room details...</p>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+          </div>
         </div>
       </div>
     );
@@ -148,8 +122,7 @@ export default function ReserveRoom() {
     <div className="min-h-screen bg-white">
       <Head>
         <title>Reserve {room.type} - Best Garden Hotel</title>
-        <meta name="description" content={`Reserve your stay in our ${room.type}`} />
-        <link rel="icon" href="/favicon.ico" />
+        <meta name="description" content={`Reserve your stay at ${room.type}`} />
       </Head>
 
       <Header />
@@ -157,88 +130,48 @@ export default function ReserveRoom() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Room Image and Details */}
-          <div className="w-full lg:w-1/2">
-            {/* Room Image Slider */}
-            <div className="relative h-96 mb-6 bg-gray-100 rounded overflow-hidden">
-              <RoomImagePlaceholder type={room.type} className="absolute inset-0" />
-              
-              {/* Navigation Arrows */}
-              <button 
-                onClick={goToPreviousImage} 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white"
-                aria-label="Previous image"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              
-              <button 
-                onClick={goToNextImage}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white"
-                aria-label="Next image"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-              
-              {/* Image Navigation Dots */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                {roomImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-3 h-3 rounded-full ${
-                      currentImageIndex === index ? 'bg-white' : 'bg-white/50'
-                    }`}
-                    aria-label={`Go to image ${index + 1}`}
-                  />
-                ))}
-              </div>
+          <div className="w-full lg:w-2/3">
+            <div className="relative h-[400px] w-full lg:max-w-[700px] rounded-lg overflow-hidden">
+              <Image
+                src={room.images ? room.images[0] : room.image}
+                alt={room.type}
+                fill
+                style={{ objectFit: 'cover' }}
+                className="rounded-lg"
+                priority
+              />
             </div>
-            
-            {/* Room Details */}
-            <div className="border-b border-gray-200 pb-6">
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold mr-6">{room.type.toUpperCase()}</h1>
-                <div className="text-lg text-gray-600 border-l border-gray-300 pl-6">{room.capacity} ADULTS</div>
-              </div>
-              
-              <p className="mt-4 text-gray-700">
-                {room.description}
-              </p>
-              
-              <p className="mt-6 text-2xl font-bold">${room.price} / night</p>
-              
-              <div className="mt-4">
-                <Link href={`/room/${id}`} className="text-blue-600 hover:underline cursor-pointer">
-                  Change selection
-                </Link>
+
+            <div className="mt-8">
+              <div className="border-b border-gray-200 pb-6">
+                <div className="flex items-center">
+                  <h1 className="text-2xl font-bold mr-6">{room.type.toUpperCase()}</h1>
+                  <div className="text-lg text-gray-600 border-l border-gray-300 pl-6">
+                    {room.capacity} {room.capacity === 1 ? 'ADULT' : 'ADULTS'}
+                  </div>
+                </div>
+                
+                <p className="mt-4 text-gray-700">{room.description}</p>
+                
+                <p className="mt-6 text-2xl font-bold">${room.price} / night</p>
+                
+                <div className="mt-4">
+                  <Link href={`/room/${id}`} className="text-blue-600 hover:underline">
+                    Change selection
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-          
+
           {/* Right Column - Reservation Form */}
-          <div className="w-full lg:w-1/2">
-            <div className="bg-white p-6 rounded-lg">
-              <h2 className="text-2xl font-bold mb-6">Complete your Reservation</h2>
+          <div className="w-full lg:w-[900px]">
+            <div className="bg-white rounded-lg">
+              <h2 className="text-2xl font-bold mb-8">Complete your Reservation</h2>
               
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-                  {error}
-                </div>
-              )}
-              
-              {success && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
-                  Reservation submitted successfully! Redirecting to confirmation page...
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label htmlFor="fullName" className="block text-gray-700 font-medium mb-2">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
                   </label>
                   <input
@@ -247,13 +180,14 @@ export default function ReserveRoom() {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    placeholder="Enter your full name"
                   />
                 </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address
                   </label>
                   <input
@@ -262,28 +196,30 @@ export default function ReserveRoom() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    placeholder="Enter your email address"
                   />
                 </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="phone" className="block text-gray-700 font-medium mb-2">
+
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
                   </label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    placeholder="Enter your phone number"
                   />
                 </div>
-                
-                <div className="mb-6">
-                  <label htmlFor="specialRequests" className="block text-gray-700 font-medium mb-2">
+
+                <div>
+                  <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-2">
                     Special Requests (optional)
                   </label>
                   <textarea
@@ -292,42 +228,46 @@ export default function ReserveRoom() {
                     value={formData.specialRequests}
                     onChange={handleInputChange}
                     rows="4"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    placeholder="Enter any special requests or requirements"
                   ></textarea>
                 </div>
-                
-                <div className="mb-6">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="termsAccepted"
-                      checked={formData.termsAccepted}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      required
-                    />
-                    <span className="ml-2 text-gray-700">
-                      I have read and accept the{' '}
-                      <Link href="/terms" className="text-blue-600 hover:underline">
-                        terms and conditions
-                      </Link>.
-                    </span>
+
+                <div className="flex items-start">
+                  <input
+                    type="checkbox"
+                    id="acceptedTerms"
+                    name="acceptedTerms"
+                    checked={formData.acceptedTerms}
+                    onChange={handleInputChange}
+                    className="mt-1 h-4 w-4 text-amber-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="acceptedTerms" className="ml-2 text-sm text-gray-600">
+                    I have read and accept the{' '}
+                    <Link href="/terms" className="text-blue-600 hover:underline">
+                      terms and conditions
+                    </Link>
+                    .
                   </label>
                 </div>
-                
-                <div className="mb-4">
-                  <p className="text-gray-700 font-medium">Note: This room will be held for 1 hour.</p>
-                  <p className="text-gray-700 mt-2">To confirm your reservation, please proceed to booking and payment.</p>
-                </div>
-                
-                <div className="mt-6">
+
+                {error && (
+                  <div className="text-red-600 text-sm">{error}</div>
+                )}
+
+                <div className="mt-8">
                   <button
                     type="submit"
-                    className="bg-gray-800 text-white py-3 px-6 rounded font-medium hover:bg-gray-700 transition-colors w-full"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
+                    className="w-full bg-[#1a2b3b] text-white py-4 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors disabled:bg-gray-400"
                   >
-                    {isLoading ? 'Processing...' : 'RESERVE ROOM'}
+                    {isSubmitting ? 'Processing...' : 'RESERVE ROOM'}
                   </button>
+                </div>
+
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Note: This room will be held for 1 hour.</p>
+                  <p className="mt-1">To confirm your reservation, please proceed to booking and payment.</p>
                 </div>
               </form>
             </div>

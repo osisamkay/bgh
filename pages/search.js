@@ -51,6 +51,10 @@ export default function Search() {
   const [notificationStatus, setNotificationStatus] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
 
+  // Add state for selected room and image gallery
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Separate handlers for min and max price
   const handleMinPriceChange = (e) => {
     console.log('Min price change:', e.target.value);
@@ -235,6 +239,27 @@ export default function Search() {
       setNotificationStatus('error');
     } finally {
       setIsSubscribing(false);
+    }
+  };
+
+  // Function to handle room selection
+  const handleRoomSelect = (room) => {
+    setSelectedRoom(room === selectedRoom ? null : room);
+    setCurrentImageIndex(0);
+  };
+
+  // Function to navigate images
+  const handleImageNavigation = (direction) => {
+    if (!selectedRoom) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prev) => 
+        prev === selectedRoom.images.length - 1 ? 0 : prev + 1
+      );
+    } else {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? selectedRoom.images.length - 1 : prev - 1
+      );
     }
   };
 
@@ -605,40 +630,132 @@ export default function Search() {
             <div className="space-y-6">
               {filteredRooms.length > 0 ? (
                 filteredRooms.map((room) => (
-                  <div key={room.id} className="flex gap-6 bg-white">
-                    {/* Room Image */}
-                    <div className="w-80 h-48 relative">
-                      <Image
-                        src={room.image}
-                        alt={room.type}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        priority={room.id <= 2}
-                      />
-                    </div>
-                    
-                    {/* Room Details */}
-                    <div className="flex-1 py-2">
-                      <h3 className="text-xl font-bold mb-2">{room.type}</h3>
-                      <p className="text-gray-700 mb-4">{room.description}</p>
-                      
-                      {/* Amenities */}
-                      <div className="text-gray-700 mb-4">
-                        {room.amenities.join(', ')}
+                  <div key={room.id} className="flex flex-col bg-white border rounded-lg overflow-hidden mb-6">
+                    <div className="flex gap-6 p-4">
+                      {/* Room Image */}
+                      <div 
+                        className="w-80 h-48 relative cursor-pointer rounded-lg overflow-hidden" 
+                        onClick={() => handleRoomSelect(room)}
+                      >
+                        <Image
+                          src={room.image}
+                          alt={room.type}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          priority={room.id <= 2}
+                          className="hover:scale-105 transition-transform duration-300"
+                        />
+                        {room.images?.length > 1 && (
+                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
+                            {room.images.length} photos
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Price and Select Button */}
-                      <div className="flex items-center justify-between">
-                        <div className="text-right">
-                          <span className="text-xl font-bold">${room.price} / night</span>
+                      {/* Room Details */}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2">{room.type}</h3>
+                        <p className="text-gray-700 mb-4">{room.description}</p>
+                        
+                        {/* Amenities */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {room.amenities.map((amenity, index) => (
+                            <span 
+                              key={index}
+                              className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                            >
+                              <div className="w-2 h-2 bg-[#d4af37] rounded-full"></div>
+                              {amenity}
+                            </span>
+                          ))}
                         </div>
-                        <Link href={`/room/${room.id}`}>
-                          <button className="bg-[#1a2b3b] text-white px-6 py-2 rounded hover:bg-[#2c3e50] transition-colors">
-                            Select Room
-                          </button>
-                        </Link>
+                        
+                        {/* Price and Select Button */}
+                        <div className="flex items-center justify-between">
+                          <div className="text-right">
+                            <span className="text-xl font-bold">${room.price}</span>
+                            <span className="text-gray-600 ml-1">/ night</span>
+                          </div>
+                          <Link href={`/room/${room.id}`}>
+                            <button className="bg-[#1a2b3b] text-white px-6 py-2 rounded hover:bg-[#2c3e50] transition-colors">
+                              Select Room
+                            </button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Image Gallery - Shows when room is selected */}
+                    {selectedRoom && selectedRoom.id === room.id && room.images?.length > 0 && (
+                      <div className="border-t">
+                        <div className="relative h-96">
+                          <Image
+                            src={room.images[currentImageIndex]}
+                            alt={`${room.type} view ${currentImageIndex + 1}`}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                          />
+                          
+                          {/* Navigation arrows - only show if there are multiple images */}
+                          {room.images.length > 1 && (
+                            <>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleImageNavigation('prev');
+                                }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-opacity"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleImageNavigation('next');
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-opacity"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Image counter */}
+                          <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                            {currentImageIndex + 1} / {room.images.length}
+                          </div>
+                        </div>
+
+                        {/* Thumbnail strip - only show if there are multiple images */}
+                        {room.images.length > 1 && (
+                          <div className="flex gap-2 p-4 overflow-x-auto">
+                            {room.images.map((image, index) => (
+                              <div 
+                                key={index}
+                                onClick={() => setCurrentImageIndex(index)}
+                                className={`relative w-20 h-20 flex-shrink-0 cursor-pointer rounded-lg overflow-hidden ${
+                                  currentImageIndex === index ? 'ring-2 ring-[#d4af37]' : ''
+                                }`}
+                              >
+                                <Image
+                                  src={image}
+                                  alt={`${room.type} thumbnail ${index + 1}`}
+                                  fill
+                                  style={{ objectFit: 'cover' }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

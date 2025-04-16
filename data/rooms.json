@@ -2,10 +2,113 @@
   "rooms": [
     {
       "id": 1,
+      "type": "Deluxe King Room",
+      "description": "Spacious room with king-size bed and city view",
+      "price": 150,
+      "capacity": 2,
+      "image": "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070",
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070",
+        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070",
+        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070"
+      ],
+      "amenities": [
+        "King-size bed",
+        "City view",
+        "Free Wi-Fi",
+        "49\" Smart TV",
+        "Mini bar",
+        "Work desk",
+        "Rain shower",
+        "Coffee maker"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "Twin Deluxe Room",
+      "description": "Comfortable room with two single beds",
+      "price": 125,
+      "capacity": 2,
+      "image": "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?q=80&w=2074",
+      "images": [
+        "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?q=80&w=2074",
+        "https://images.unsplash.com/photo-1590490359683-658d3d23f972?q=80&w=2074",
+        "https://images.unsplash.com/photo-1587985064135-0366536eab42?q=80&w=2070",
+        "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2025"
+      ],
+      "amenities": [
+        "Two single beds",
+        "Garden view",
+        "Free Wi-Fi",
+        "43\" Smart TV",
+        "Mini fridge",
+        "Work area",
+        "Shower"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "Executive Suite",
+      "description": "Luxury suite with separate living area",
+      "price": 200,
+      "capacity": 3,
+      "image": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070",
+        "https://images.unsplash.com/photo-1631049421450-348ccd7f8949?q=80&w=2070",
+        "https://images.unsplash.com/photo-1631049552057-403cdb8f0658?q=80&w=2070",
+        "https://images.unsplash.com/photo-1631049035182-249067d7618e?q=80&w=2070"
+      ],
+      "amenities": [
+        "King-size bed",
+        "Separate living area",
+        "Panoramic view",
+        "Free Wi-Fi",
+        "55\" Smart TV",
+        "Full mini bar",
+        "Executive desk",
+        "Bathtub & Rain shower",
+        "Nespresso machine",
+        "Lounge access"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Family Room",
+      "description": "Spacious room perfect for families",
+      "price": 175,
+      "capacity": 4,
+      "image": "https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?q=80&w=2074",
+      "images": [
+        "https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?q=80&w=2074",
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=2158",
+        "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?q=80&w=2070",
+        "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2025"
+      ],
+      "amenities": [
+        "Queen-size bed",
+        "Two single beds",
+        "Pool view",
+        "Free Wi-Fi",
+        "49\" Smart TV",
+        "Mini fridge",
+        "Dining area",
+        "Shower",
+        "Kids amenities"
+      ]
+    },
+    {
+      "id": 5,
       "type": "Single Room",
       "description": "Cozy room with a single bed, suitable for solo visitors.",
       "price": 150,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Single Room (1).jpg",
+      "image": "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070",
+        "https://images.unsplash.com/photo-1587985064135-0366536eab42?q=80&w=2070",
+        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2070"
+      ],
       "amenities": [
         "Free Wi-Fi",
         "Free Breakfast",
@@ -14,11 +117,16 @@
       "capacity": 1
     },
     {
-      "id": 2,
+      "id": 6,
       "type": "Twin Room",
       "description": "Comfortable room with two-double beds, ideal for couples.",
       "price": 150,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Twin Room image (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?q=80&w=2074",
+      "images": [
+        "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?q=80&w=2074",
+        "https://images.unsplash.com/photo-1590490359683-658d3d23f972?q=80&w=2074",
+        "https://images.unsplash.com/photo-1587985064135-0366536eab42?q=80&w=2070"
+      ],
       "amenities": [
         "Wi-Fi",
         "Free Breakfast",
@@ -27,11 +135,16 @@
       "capacity": 2
     },
     {
-      "id": 3,
+      "id": 7,
       "type": "Deluxe Room",
       "description": "Spacious room featuring a separate living area, Sofa bed, and Queen size bed. Suitable for small families.",
       "price": 250,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Deluxe Room image (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1629371997433-d11e6171636e?q=80&w=2071",
+      "images": [
+        "https://images.unsplash.com/photo-1629371997433-d11e6171636e?q=80&w=2071",
+        "https://images.unsplash.com/photo-1629371995061-2473459ff556?q=80&w=2071",
+        "https://images.unsplash.com/photo-1629371995931-b8a8648010e9?q=80&w=2071"
+      ],
       "amenities": [
         "Wi-Fi",
         "Free Breakfast",
@@ -40,11 +153,16 @@
       "capacity": 3
     },
     {
-      "id": 4,
+      "id": 8,
       "type": "King Suite Room",
       "description": "Luxurious room with a living area, Sofa bed, King size bed, kitchenette, and a bar area.",
       "price": 400,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH King Room image (1).jpg",
+      "image": "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=2070",
+        "https://images.unsplash.com/photo-1590490359683-658d3d23f972?q=80&w=2074",
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070"
+      ],
       "amenities": [
         "Free Wi-Fi",
         "Free Breakfast",
@@ -53,11 +171,16 @@
       "capacity": 4
     },
     {
-      "id": 5,
+      "id": 9,
       "type": "Queen Room",
       "description": "Premium suite with comfortable queen bed and stylish decor.",
       "price": 300,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Queen Room Image 1.jpeg",
+      "image": "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2074",
+      "images": [
+        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2074",
+        "https://images.unsplash.com/photo-1566665797413-9d251239b7f9?q=80&w=2074",
+        "https://images.unsplash.com/photo-1566665797049-628a3f0ed790?q=80&w=2074"
+      ],
       "amenities": [
         "Wi-Fi",
         "Free Breakfast",
@@ -68,11 +191,16 @@
       "capacity": 2
     },
     {
-      "id": 6,
+      "id": 10,
       "type": "Double Room",
       "description": "Spacious accommodation with comfortable double bed, perfect for couples.",
       "price": 200,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Double Room image (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=2070",
+        "https://images.unsplash.com/photo-1505692433770-36f19f51681d?q=80&w=2070",
+        "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2070"
+      ],
       "amenities": [
         "Wi-Fi",
         "Free Breakfast",
@@ -82,7 +210,7 @@
       "capacity": 2
     },
     {
-      "id": 7,
+      "id": 11,
       "type": "Single Room with City View",
       "description": "Modern single room featuring stunning city views and contemporary furnishings.",
       "price": 175,
@@ -96,7 +224,7 @@
       "capacity": 1
     },
     {
-      "id": 8,
+      "id": 12,
       "type": "Twin Room with Balcony",
       "description": "Bright room with two beds and a private balcony overlooking the city.",
       "price": 180,
@@ -110,7 +238,7 @@
       "capacity": 2
     },
     {
-      "id": 9,
+      "id": 13,
       "type": "Deluxe Corner Room",
       "description": "Spacious corner room with panoramic windows and enhanced living space.",
       "price": 275,
@@ -125,7 +253,7 @@
       "capacity": 3
     },
     {
-      "id": 10,
+      "id": 14,
       "type": "Executive King Suite",
       "description": "Premium suite with separate bedroom, living room, and executive amenities.",
       "price": 450,
@@ -140,7 +268,7 @@
       "capacity": 4
     },
     {
-      "id": 11,
+      "id": 15,
       "type": "Queen Room with Pool View",
       "description": "Elegant room with queen bed and direct views of the swimming pool.",
       "price": 325,
@@ -155,7 +283,7 @@
       "capacity": 2
     },
     {
-      "id": 12,
+      "id": 16,
       "type": "Double Room with Terrace",
       "description": "Charming room with a private terrace and outdoor seating area.",
       "price": 225,
@@ -169,11 +297,16 @@
       "capacity": 2
     },
     {
-      "id": 13,
+      "id": 17,
       "type": "Family Suite",
       "description": "Large suite with two bedrooms, perfect for families or groups.",
       "price": 500,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Family Suite (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?q=80&w=2074",
+      "images": [
+        "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?q=80&w=2074",
+        "https://images.unsplash.com/photo-1445020079600-80fd0c3ee6b9?q=80&w=2074",
+        "https://images.unsplash.com/photo-1444201983204-c43cbd584d93?q=80&w=2070"
+      ],
       "amenities": [
         "Free Wi-Fi",
         "Free Breakfast",
@@ -184,11 +317,16 @@
       "capacity": 6
     },
     {
-      "id": 14,
+      "id": 18,
       "type": "Business Room",
       "description": "Well-equipped room with dedicated workspace and business amenities.",
       "price": 200,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Business Room (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1594560913095-8cf34bab82ad?q=80&w=2069",
+      "images": [
+        "https://images.unsplash.com/photo-1594560913095-8cf34bab82ad?q=80&w=2069",
+        "https://images.unsplash.com/photo-1594560913036-d19c06a9f989?q=80&w=2069",
+        "https://images.unsplash.com/photo-1594560914472-636f50aa3e50?q=80&w=2069"
+      ],
       "amenities": [
         "High-speed Wi-Fi",
         "Free Breakfast",
@@ -199,11 +337,16 @@
       "capacity": 1
     },
     {
-      "id": 15,
+      "id": 19,
       "type": "Honeymoon Suite",
       "description": "Romantic suite with luxury amenities and spectacular views.",
       "price": 550,
-      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Honeymoon Suite (1).jpeg",
+      "image": "https://images.unsplash.com/photo-1619631428091-1eaa03c3bdf1?q=80&w=2070",
+      "images": [
+        "https://images.unsplash.com/photo-1619631428091-1eaa03c3bdf1?q=80&w=2070",
+        "https://images.unsplash.com/photo-1619631428069-902cd6e34167?q=80&w=2070",
+        "https://images.unsplash.com/photo-1619631428164-05a2a483d1bf?q=80&w=2070"
+      ],
       "amenities": [
         "Free Wi-Fi",
         "Champagne Service",

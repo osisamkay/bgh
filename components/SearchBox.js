@@ -133,10 +133,10 @@ export default function SearchBox() {
   }, []);
 
   return (
-    <div className="w-full bg-[#faf8e4] py-8">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="container mx-auto bg-[#faf8e4] py-8">
+      <div className="w-full mx-auto px-4 md:px-16">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex flex-col md:flex-row md:items-center">
+          <div className="flex flex-col md:flex-row items-center justify-between">
             {/* Date Selector */}
             <div ref={datePickerRef}>
               <DateSelector
@@ -183,7 +183,7 @@ export default function SearchBox() {
             <div className="hidden md:block w-px h-16 bg-gray-300 mx-6"></div>
             
             {/* Search Button */}
-            <div className="md:flex-1 flex items-center justify-center mt-4 md:mt-0">
+            <div className="md:flex-1 w-full max-w-[204px] flex items-center justify-center mt-4 md:mt-0">
               <SearchButton onClick={handleSearch} />
             </div>
           </div>

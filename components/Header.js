@@ -67,7 +67,7 @@ const Header = () => {
             <Link href="#rooms" className="text-gray-900 hover:text-white">ROOMS & SUITES</Link>
             <Link href="#amenities" className="text-gray-900 hover:text-white">AMENITIES</Link>
             <Link href="#events" className="text-gray-900 hover:text-white">GROUP & EVENTS</Link>
-            <Link href="#reservations" className="text-gray-900 hover:text-white">CHECK RESERVATIONS</Link>
+            <Link href="/check-reservation" className="text-gray-900 hover:text-white">CHECK RESERVATIONS</Link>
           </nav>
           
           {/* Book Button */}
@@ -85,7 +85,7 @@ const Header = () => {
             <Link href="#rooms" className="text-gray-900 hover:text-white py-2">ROOMS & SUITES</Link>
             <Link href="#amenities" className="text-gray-900 hover:text-white py-2">AMENITIES</Link>
             <Link href="#events" className="text-gray-900 hover:text-white py-2">GROUP & EVENTS</Link>
-            <Link href="#reservations" className="text-gray-900 hover:text-white py-2">CHECK RESERVATIONS</Link>
+            <Link href="/check-reservation" className="text-gray-900 hover:text-white py-2">CHECK RESERVATIONS</Link>
             <Link href="/room">
               <button className="bg-gray-900 text-white uppercase text-sm font-semibold py-2 px-4 rounded mt-2 w-full">
                 BOOK OR RESERVE

@@ -1,0 +1,19 @@
+{
+  "reservations": [
+    {
+      "id": "1744828913983",
+      "fullName": "Hamish Stephens",
+      "email": "nopibedeq@mailinator.com",
+      "phoneNumber": "+1 (509) 453-2386",
+      "specialRequests": "Enim in sed facere d",
+      "acceptedTerms": true,
+      "roomId": "12",
+      "roomType": "Twin Room with Balcony",
+      "price": 180,
+      "reservationDate": "2025-04-16T18:41:53.739Z",
+      "status": "pending",
+      "createdAt": "2025-04-16T18:41:53.983Z",
+      "expiresAt": "2025-04-16T19:41:53.983Z"
+    }
+  ]
+}

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import Header from '../../components/Header';
-import RoomImagePlaceholder from '../../components/RoomImagePlaceholder';
 import roomsData from '../../data/rooms.json';
 
 export default function RoomDetails() {
@@ -13,45 +13,43 @@ export default function RoomDetails() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock images for the room
-  const roomImages = [
-    '/images/rooms/room1.jpg',
-    '/images/rooms/room2.jpg',
-    '/images/rooms/room3.jpg',
-    '/images/rooms/room4.jpg'
-  ];
-
   useEffect(() => {
-    // Find the room by ID once the router is ready
     if (id) {
-      const selectedRoom = roomsData.rooms.find(r => r.id === parseInt(id)) ||
-        // Default to the deluxe room for the demo (ID 3)
-        roomsData.rooms.find(r => r.id === 3);
-      
-      setRoom(selectedRoom);
-      setIsLoading(false);
+      const selectedRoom = roomsData.rooms.find(r => r.id === parseInt(id));
+      if (selectedRoom) {
+        setRoom(selectedRoom);
+        setIsLoading(false);
+      } else {
+        router.push('/search');
+      }
     }
-  }, [id]);
+  }, [id, router]);
 
-  // Handle image navigation
-  const goToPreviousImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? roomImages.length - 1 : prev - 1
-    );
-  };
-
-  const goToNextImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === roomImages.length - 1 ? 0 : prev + 1
-    );
+  const handleImageNavigation = (direction) => {
+    if (!room?.images) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prev) => 
+        prev === room.images.length - 1 ? 0 : prev + 1
+      );
+    } else {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? room.images.length - 1 : prev - 1
+      );
+    }
   };
 
   if (isLoading || !room) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="container mx-auto px-4 py-8 flex justify-center items-center">
-          <p className="text-lg">Loading room details...</p>
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-96 bg-gray-200 rounded-lg mb-8"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
         </div>
       </div>
     );
@@ -69,64 +67,67 @@ export default function RoomDetails() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left Column - Room Image Slider */}
-          <div className="w-full lg:w-1/2 relative">
-            <div className="relative h-96 overflow-hidden">
-              {/* Room Image */}
-              <RoomImagePlaceholder 
-                type={room.type}
-                className="absolute inset-0"
+          {/* Left Column - Room Images and Details */}
+          <div className="w-full lg:w-2/3">
+            {/* Image Slider */}
+            <div className="relative h-[400px] w-full lg:max-w-[700px] rounded-lg overflow-hidden">
+              <Image
+                src={room.images ? room.images[currentImageIndex] : room.image}
+                alt={`${room.type} - View ${currentImageIndex + 1}`}
+                fill
+                style={{ objectFit: 'cover' }}
+                className="rounded-lg"
+                priority
               />
               
-              {/* Navigation Arrows */}
-              <button 
-                onClick={goToPreviousImage} 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white"
-                aria-label="Previous image"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              
-              <button 
-                onClick={goToNextImage} 
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white"
-                aria-label="Next image"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-              
-              {/* Image Navigation Dots */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                {roomImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-3 h-3 rounded-full ${
-                      currentImageIndex === index ? 'bg-white' : 'bg-white/50'
-                    }`}
-                    aria-label={`Go to image ${index + 1}`}
-                  />
-                ))}
-              </div>
+              {room.images && room.images.length > 1 && (
+                <>
+                  <button 
+                    onClick={() => handleImageNavigation('prev')}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleImageNavigation('next')}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  {/* Image Navigation Dots */}
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    {room.images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full ${
+                          currentImageIndex === index ? 'bg-white' : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            
+
             {/* Room Details Box */}
             <div className="mt-8">
               <div className="border-b border-gray-200 pb-6">
                 <div className="flex items-center">
-                  <h1 className="text-2xl font-bold mr-6">DELUXE ROOM</h1>
-                  <div className="text-lg text-gray-600 border-l border-gray-300 pl-6">2 ADULTS</div>
+                  <h1 className="text-2xl font-bold mr-6">{room.type.toUpperCase()}</h1>
+                  <div className="text-lg text-gray-600 border-l border-gray-300 pl-6">
+                    {room.capacity} {room.capacity === 1 ? 'ADULT' : 'ADULTS'}
+                  </div>
                 </div>
                 
-                <p className="mt-4 text-gray-700">
-                  Spacious room featuring a separate living area, Sofa bed, and Queen size bed. Suitable for small families.
-                </p>
+                <p className="mt-4 text-gray-700">{room.description}</p>
                 
-                <p className="mt-6 text-2xl font-bold">$250 / night</p>
+                <p className="mt-6 text-2xl font-bold">${room.price} / night</p>
                 
                 <div className="mt-4">
                   <button className="text-blue-600 hover:underline">
@@ -136,13 +137,14 @@ export default function RoomDetails() {
               </div>
             </div>
           </div>
-          
+
           {/* Right Column - Property Information & Amenities */}
-          <div className="w-full lg:w-1/2">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-6">Property Information</h2>
+          <div className="w-full lg:w-[900px]">
+            <div className="bg-white rounded-lg">
+              <h2 className="text-xl font-bold mb-6">Property Information</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-6 md:space-y-0 grid grid-cols-1 md:grid-cols-2 ">
+                <div className="space-y-6">
                 <div className="flex items-start">
                   <div className="w-8 h-8 mr-4 flex-shrink-0 text-amber-600">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -187,10 +189,10 @@ export default function RoomDetails() {
                       See Accessibility Features
                     </button>
                   </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="mt-6 space-y-6">
+                <div className="">
+
                 <div className="flex items-start">
                   <div className="w-8 h-8 mr-4 flex-shrink-0 text-amber-600">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,7 +205,7 @@ export default function RoomDetails() {
                     <p className="text-gray-600 mt-1">Contact hotel for details</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <div className="w-8 h-8 mr-4 flex-shrink-0 text-amber-600">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,123 +216,139 @@ export default function RoomDetails() {
                     <p className="font-medium text-gray-800">Parking</p>
                     <p className="text-gray-600 mt-1">Complimentary on-site parking</p>
                   </div>
-                </div>
+                  </div>
+                  </div>
               </div>
-            </div>
-            
-            {/* Amenities Section */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Amenities</h2>
-              
-              <div className="grid grid-cols-2 gap-6">
-                {/* Row 1 */}
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+
+              {/* Amenities Section */}
+              <div className="mt-8">
+                <h2 className="text-xl font-bold mb-6">Amenities</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/baby-bib-icon.svg"
+                        alt="Kids eat free"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Kids eat free</span>
                   </div>
-                  <span className="text-gray-800">Kids eat free</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/breakfast-set-svgrepo-com.svg"
+                        alt="Free breakfast"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Free breakfast</span>
                   </div>
-                  <span className="text-gray-800">Free breakfast</span>
-                </div>
-                
-                {/* Row 2 */}
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/cleaning-spray-svgrepo-com.svg"
+                        alt="Daily housekeeping"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Daily housekeeping</span>
                   </div>
-                  <span className="text-gray-800">Fitness center</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/weightlifting-gym-svgrepo-com.svg"
+                        alt="Fitness center"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Fitness center</span>
                   </div>
-                  <span className="text-gray-800">Daily housekeeping</span>
-                </div>
-                
-                {/* Row 3 */}
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/parking-svgrepo-com.svg"
+                        alt="On-site parking"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">On-site parking</span>
                   </div>
-                  <span className="text-gray-800">On-site parking</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/swim-svgrepo-com.svg"
+                        alt="Pool"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Pool</span>
                   </div>
-                  <span className="text-gray-800">Pool</span>
-                </div>
-                
-                {/* Row 4 */}
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/no-smoking-svgrepo-com.svg"
+                        alt="Smoke-free hotel"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Smoke-free hotel</span>
                   </div>
-                  <span className="text-gray-800">Smoke-free hotel</span>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-800">Wi-Fi</span>
                   </div>
-                  <span className="text-gray-800">Wi-Fi</span>
-                </div>
-                
-                {/* Row 5 */}
-                <div className="flex items-center">
-                  <div className="w-8 h-8 mr-3 flex-shrink-0 text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 mr-3 flex-shrink-0">
+                      <Image
+                        src="/images/shuttle-svgrepo-com.svg"
+                        alt="Area shuttle"
+                        width={25}
+                        height={25}
+                      />
+                    </div>
+                    <span className="text-gray-800">Area shuttle</span>
                   </div>
-                  <span className="text-gray-800">Area shuttle</span>
                 </div>
-              </div>
-              
-              <div className="mt-6">
-                <Link href="#" className="text-blue-600 font-medium hover:underline">
-                  See all amenities &gt;
-                </Link>
+
+                <div className="mt-6">
+                  <Link href="#" className="text-blue-600 font-medium hover:underline">
+                    See all amenities &gt;
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Booking Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
-          <Link href={`/reserve/${id}`} className="bg-gray-800 text-white py-3 px-8 rounded font-medium hover:bg-gray-700 inline-block text-center">
+          <Link href={`/reserve/${id}`}
+            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors inline-block"
+          >
             RESERVE ROOM
           </Link>
           <button 
-            onClick={() => {
-              // For demonstration purposes, direct to the same reservation page
-              router.push(`/reserve/${id}`);
-            }}
-            className="bg-gray-800 text-white py-3 px-8 rounded font-medium hover:bg-gray-700"
+            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors"
           >
             BOOK ROOM
           </button>
