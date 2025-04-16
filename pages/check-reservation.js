@@ -28,10 +28,15 @@ const CheckReservation = () => {
         throw new Error(data.message || 'Failed to find reservation');
       }
 
+      if (!data.room || !data.room.images || !Array.isArray(data.room.images)) {
+        throw new Error('Invalid room data structure');
+      }
+
       setReservation(data);
       addNotification('Reservation found successfully!', 'success');
     } catch (err) {
-      addNotification('Reservation not found. Please check your ID and try again.', 'error');
+      addNotification(err.message || 'Reservation not found. Please check your ID and try again.', 'error');
+      setReservation(null);
     } finally {
       setLoading(false);
     }
@@ -135,46 +140,52 @@ const CheckReservation = () => {
               <div className="flex flex-col lg:flex-row">
                 {/* Left Column - Room Images */}
                 <div className="lg:w-1/2">
-                  <div className="relative h-[400px] w-full">
-                    <Image
-                      src={reservation?.room?.images[currentImageIndex]}
-                      alt={reservation.roomType}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      priority
-                    />
-                    
-                    {reservation?.room?.images && reservation?.room?.images?.length > 1 && (
-                      <>
-                        <button 
-                          onClick={() => handleImageNavigation('prev')}
-                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button 
-                          onClick={() => handleImageNavigation('next')}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
+                  {reservation?.room?.images && reservation.room.images.length > 0 ? (
+                    <div className="relative h-[400px] w-full">
+                      <Image
+                        src={reservation.room.images[currentImageIndex]}
+                        alt={reservation.roomType}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        priority
+                      />
+                      
+                      {reservation.room.images.length > 1 && (
+                        <>
+                          <button 
+                            onClick={() => handleImageNavigation('prev')}
+                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleImageNavigation('next')}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
 
-                        {/* Image Counter */}
-                        <div className="absolute bottom-4 right-4 bg-black/50 px-3 py-1 rounded-full text-white text-sm">
-                          {currentImageIndex + 1} / {reservation?.room?.images?.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                          {/* Image Counter */}
+                          <div className="absolute bottom-4 right-4 bg-black/50 px-3 py-1 rounded-full text-white text-sm">
+                            {currentImageIndex + 1} / {reservation.room.images.length}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative h-[400px] w-full bg-gray-100 flex items-center justify-center">
+                      <p className="text-gray-500">No images available</p>
+                    </div>
+                  )}
 
                   {/* Thumbnail Strip */}
-                  {reservation?.room?.images && reservation?.room?.images?.length > 1 && (
+                  {reservation?.room?.images && reservation.room.images.length > 1 && (
                     <div className="flex gap-2 p-4 bg-gray-100 overflow-x-auto">
-                      {reservation?.room?.images?.map((image, index) => (
+                      {reservation.room.images.map((image, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}

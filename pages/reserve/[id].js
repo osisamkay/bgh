@@ -16,7 +16,11 @@ export default function ReservationPage() {
     email: '',
     phoneNumber: '',
     specialRequests: '',
-    acceptedTerms: false
+    roomId: id,
+    agreeToTerms: false,
+    checkInDate: router.query.checkIn || '',
+    checkOutDate: router.query.checkOut || '',
+    guests: router.query.guests ? parseInt(router.query.guests) : 1
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,11 +33,56 @@ export default function ReservationPage() {
       if (selectedRoom) {
         setRoom(selectedRoom);
         setIsLoading(false);
+
+        // Get URL parameters
+        const { checkIn, checkOut, guests } = router.query;
+        
+        // Update form data with URL parameters
+        setFormData(prev => ({
+          ...prev,
+          checkInDate: checkIn || prev.checkInDate,
+          checkOutDate: checkOut || prev.checkOutDate,
+          guests: guests ? parseInt(guests) : prev.guests,
+          roomId: parseInt(id)
+        }));
       } else {
         router.push('/search');
       }
     }
-  }, [id, router]);
+  }, [id, router.query]);
+
+  // Format date for display
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+  };
+
+  // Format date for input
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Calculate nights
+  const calculateNights = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const [nights, setNights] = useState(1);
+
+  // Update nights when dates change
+  useEffect(() => {
+    const updatedNights = calculateNights(formData.checkInDate, formData.checkOutDate);
+    if (updatedNights > 0) {
+      setNights(updatedNights);
+    }
+  }, [formData.checkInDate, formData.checkOutDate]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -45,60 +94,31 @@ export default function ReservationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate form
-    if (!formData.fullName.trim()) {
-      addNotification('Please enter your full name', 'warning');
-      return;
-    }
-    if (!formData.email.trim()) {
-      addNotification('Please enter your email address', 'warning');
-      return;
-    }
-    if (!formData.phoneNumber.trim()) {
-      addNotification('Please enter your phone number', 'warning');
-      return;
-    }
-    if (!formData.specialRequests.trim()) {
-      addNotification('Please enter special requests', 'warning');
-      return;
-    }
-    if (!formData.acceptedTerms) {
-      addNotification('Please accept the terms and conditions', 'warning');
-      return;
-    }
-
     setIsSubmitting(true);
     setError('');
 
     try {
-      const reservationData = {
-        ...formData,
-        roomId: id,
-        roomType: room.type,
-        price: room.price,
-        reservationDate: new Date().toISOString(),
-        status: 'pending'
-      };
-
       const response = await fetch('/api/reservations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(reservationData),
+        body: JSON.stringify({
+          ...formData,
+          checkInDate: formatDateForInput(formData.checkInDate),
+          checkOutDate: formatDateForInput(formData.checkOutDate),
+          guests: parseInt(formData.guests)
+        }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to create reservation');
+        throw new Error('Failed to create reservation');
       }
 
-      addNotification('Reservation created successfully!', 'success');
+      const data = await response.json();
       router.push(`/reservation-confirmation?id=${data.id}`);
     } catch (error) {
-      setError(error.message || 'Failed to create reservation. Please try again.');
+      setError(error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -170,6 +190,7 @@ export default function ReservationPage() {
               <h2 className="text-2xl font-bold mb-8">Complete your Reservation</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
+
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
@@ -180,7 +201,6 @@ export default function ReservationPage() {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     placeholder="Enter your full name"
                   />
@@ -196,7 +216,6 @@ export default function ReservationPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     placeholder="Enter your email address"
                   />
@@ -212,7 +231,6 @@ export default function ReservationPage() {
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     placeholder="Enter your phone number"
                   />
@@ -220,7 +238,7 @@ export default function ReservationPage() {
 
                 <div>
                   <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-2">
-                    Special Requests (optional)
+                    Special Requests
                   </label>
                   <textarea
                     id="specialRequests"
@@ -236,13 +254,13 @@ export default function ReservationPage() {
                 <div className="flex items-start">
                   <input
                     type="checkbox"
-                    id="acceptedTerms"
-                    name="acceptedTerms"
-                    checked={formData.acceptedTerms}
+                    id="agreeToTerms"
+                    name="agreeToTerms"
+                    checked={formData.agreeToTerms}
                     onChange={handleInputChange}
                     className="mt-1 h-4 w-4 text-amber-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="acceptedTerms" className="ml-2 text-sm text-gray-600">
+                  <label htmlFor="agreeToTerms" className="ml-2 text-sm text-gray-600">
                     I have read and accept the{' '}
                     <Link href="/terms" className="text-blue-600 hover:underline">
                       terms and conditions

@@ -679,7 +679,16 @@ export default function Search() {
                             <span className="text-xl font-bold">${room.price}</span>
                             <span className="text-gray-600 ml-1">/ night</span>
                           </div>
-                          <Link href={`/room/${room.id}`}>
+                          <Link 
+                            href={{
+                              pathname: `/room/${room.id}`,
+                              query: {
+                                checkIn: checkInDate,
+                                checkOut: checkOutDate,
+                                guests: guests
+                              }
+                            }}
+                          >
                             <button className="bg-[#1a2b3b] text-white px-6 py-2 rounded hover:bg-[#2c3e50] transition-colors">
                               Select Room
                             </button>

@@ -31,22 +31,15 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: 'Reservation not found' });
       }
 
-      // Read the rooms file to get room details
-      const roomsContent = fs.readFileSync(ROOMS_FILE, 'utf8');
-      const roomsData = JSON.parse(roomsContent);
-      const room = roomsData.rooms.find(r => r.id === parseInt(reservation.roomId));
+      // Check if reservation is cancelled
+      if (reservation.status === 'cancelled') {
+        return res.status(403).json({ 
+          message: 'This reservation has been cancelled',
+          status: 'cancelled'
+        });
+      }
 
-      // Combine reservation with room details
-      const reservationWithDetails = {
-        ...reservation,
-        room: {
-          type: room.type,
-          images: room.images,
-          price: room.price
-        }
-      };
-
-      return res.status(200).json(reservationWithDetails);
+      return res.status(200).json(reservation);
     }
 
     // DELETE request - Cancel reservation
@@ -57,48 +50,20 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: 'Reservation not found' });
       }
 
-      try {
-        // Get the reason from the request body (no need to parse JSON)
-        const { reason } = req.body;
+      // Update reservation status to cancelled
+      reservationsData.reservations[reservationIndex] = {
+        ...reservationsData.reservations[reservationIndex],
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString()
+      };
 
-        if (!reason) {
-          return res.status(400).json({ message: 'Cancellation reason is required' });
-        }
+      // Write back to file
+      fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservationsData, null, 2));
 
-        // Get the reservation before removing it
-        const cancelledReservation = reservationsData.reservations[reservationIndex];
-
-        // Add cancellation details
-        const cancellationRecord = {
-          ...cancelledReservation,
-          cancelledAt: new Date().toISOString(),
-          cancellationReason: reason,
-          status: 'cancelled'
-        };
-
-        // Remove the active reservation
-        reservationsData.reservations.splice(reservationIndex, 1);
-
-        // Add to cancellation history
-        if (!reservationsData.cancellationHistory) {
-          reservationsData.cancellationHistory = [];
-        }
-        reservationsData.cancellationHistory.push(cancellationRecord);
-
-        // Write back to file
-        fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservationsData, null, 2));
-
-        return res.status(200).json({ 
-          message: 'Reservation cancelled successfully',
-          cancellation: cancellationRecord
-        });
-      } catch (error) {
-        console.error('Error processing cancellation:', error);
-        return res.status(400).json({ 
-          message: 'Error processing cancellation',
-          error: error.message 
-        });
-      }
+      return res.status(200).json({ 
+        message: 'Reservation cancelled successfully',
+        status: 'cancelled'
+      });
     }
 
     // Method not allowed
