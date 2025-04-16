@@ -37,11 +37,10 @@ const Header = () => {
             <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
               {/* Use the actual BGH logo from the images directory */}
               <Image 
-                src="/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Logo.jpg" 
+                src="/images/logo.svg" 
                 alt="Best Garden Hotel" 
                 width={100} 
                 height={100} 
-                className="object-contain rounded-lg"
               />
             </div>
           </Link>
@@ -72,9 +71,11 @@ const Header = () => {
           </nav>
           
           {/* Book Button */}
-          <button className="hidden md:block bg-gray-900 text-white uppercase text-sm lg:text-base font-semibold py-2 px-4 lg:px-6 rounded">
-            BOOK OR RESERVE
-          </button>
+          <Link href="/search">
+            <button className="hidden md:block bg-gray-900 text-white uppercase text-sm lg:text-base font-semibold py-2 px-4 lg:px-6 rounded">
+              BOOK OR RESERVE
+            </button>
+          </Link>
         </div>
         
         {/* Mobile Menu */}
@@ -85,9 +86,11 @@ const Header = () => {
             <Link href="#amenities" className="text-gray-900 hover:text-white py-2">AMENITIES</Link>
             <Link href="#events" className="text-gray-900 hover:text-white py-2">GROUP & EVENTS</Link>
             <Link href="#reservations" className="text-gray-900 hover:text-white py-2">CHECK RESERVATIONS</Link>
-            <button className="bg-gray-900 text-white uppercase text-sm font-semibold py-2 px-4 rounded mt-2 w-full">
-              BOOK OR RESERVE
-            </button>
+            <Link href="/room">
+              <button className="bg-gray-900 text-white uppercase text-sm font-semibold py-2 px-4 rounded mt-2 w-full">
+                BOOK OR RESERVE
+              </button>
+            </Link>
           </nav>
         </div>
       </header>

@@ -14,12 +14,12 @@ export default function SearchBox() {
   const router = useRouter();
   
   // State management
-  const [checkInDate, setCheckInDate] = useState('07/07/2025');
-  const [checkOutDate, setCheckOutDate] = useState('07/17/2025');
+  const [checkInDate, setCheckInDate] = useState('4/15/2025');
+  const [checkOutDate, setCheckOutDate] = useState('04/16/2025');
   const [rooms, setRooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [ratePreference, setRatePreference] = useState('Best Available ***');
-  const [nights, setNights] = useState(9);
+  const [nights, setNights] = useState(1);
   
   // Refs for dropdown containers
   const datePickerRef = useRef(null);

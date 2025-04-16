@@ -6,7 +6,11 @@
       "description": "Cozy room with a single bed, suitable for solo visitors.",
       "price": 150,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Single Room (1).jpg",
-      "amenities": ["Free Wi-Fi", "Free Breakfast", "Pool"],
+      "amenities": [
+        "Free Wi-Fi",
+        "Free Breakfast",
+        "Pool"
+      ],
       "capacity": 1
     },
     {
@@ -15,7 +19,11 @@
       "description": "Comfortable room with two-double beds, ideal for couples.",
       "price": 150,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Twin Room image (1).jpeg",
-      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool"],
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Swimming Pool"
+      ],
       "capacity": 2
     },
     {
@@ -24,7 +32,11 @@
       "description": "Spacious room featuring a separate living area, Sofa bed, and Queen size bed. Suitable for small families.",
       "price": 250,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Deluxe Room image (1).jpeg",
-      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool"],
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Swimming Pool"
+      ],
       "capacity": 3
     },
     {
@@ -33,7 +45,11 @@
       "description": "Luxurious room with a living area, Sofa bed, King size bed, kitchenette, and a bar area.",
       "price": 400,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH King Room image (1).jpg",
-      "amenities": ["Free Wi-Fi", "Free Breakfast", "Pool"],
+      "amenities": [
+        "Free Wi-Fi",
+        "Free Breakfast",
+        "Pool"
+      ],
       "capacity": 4
     },
     {
@@ -42,7 +58,13 @@
       "description": "Premium suite with comfortable queen bed and stylish decor.",
       "price": 300,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Queen Room Image 1.jpeg",
-      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool", "Minibar", "Room Service"],
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Swimming Pool",
+        "Minibar",
+        "Room Service"
+      ],
       "capacity": 2
     },
     {
@@ -51,7 +73,144 @@
       "description": "Spacious accommodation with comfortable double bed, perfect for couples.",
       "price": 200,
       "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Double Room image (1).jpeg",
-      "amenities": ["Wi-Fi", "Free Breakfast", "Swimming Pool", "Microwave"],
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Swimming Pool",
+        "Microwave"
+      ],
+      "capacity": 2
+    },
+    {
+      "id": 7,
+      "type": "Single Room with City View",
+      "description": "Modern single room featuring stunning city views and contemporary furnishings.",
+      "price": 175,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Single Room (2).jpg",
+      "amenities": [
+        "Free Wi-Fi",
+        "Free Breakfast",
+        "City View",
+        "Work Desk"
+      ],
+      "capacity": 1
+    },
+    {
+      "id": 8,
+      "type": "Twin Room with Balcony",
+      "description": "Bright room with two beds and a private balcony overlooking the city.",
+      "price": 180,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Twin Room image (2).jpeg",
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Balcony",
+        "Mini Fridge"
+      ],
+      "capacity": 2
+    },
+    {
+      "id": 9,
+      "type": "Deluxe Corner Room",
+      "description": "Spacious corner room with panoramic windows and enhanced living space.",
+      "price": 275,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Deluxe Room image (2).jpeg",
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "City View",
+        "Sitting Area",
+        "Room Service"
+      ],
+      "capacity": 3
+    },
+    {
+      "id": 10,
+      "type": "Executive King Suite",
+      "description": "Premium suite with separate bedroom, living room, and executive amenities.",
+      "price": 450,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH King Room image (2).jpg",
+      "amenities": [
+        "Free Wi-Fi",
+        "Free Breakfast",
+        "Executive Lounge Access",
+        "Minibar",
+        "Room Service"
+      ],
+      "capacity": 4
+    },
+    {
+      "id": 11,
+      "type": "Queen Room with Pool View",
+      "description": "Elegant room with queen bed and direct views of the swimming pool.",
+      "price": 325,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Queen Room Image 2.jpeg",
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Pool View",
+        "Balcony",
+        "Room Service"
+      ],
+      "capacity": 2
+    },
+    {
+      "id": 12,
+      "type": "Double Room with Terrace",
+      "description": "Charming room with a private terrace and outdoor seating area.",
+      "price": 225,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Double Room image (2).jpeg",
+      "amenities": [
+        "Wi-Fi",
+        "Free Breakfast",
+        "Private Terrace",
+        "Minibar"
+      ],
+      "capacity": 2
+    },
+    {
+      "id": 13,
+      "type": "Family Suite",
+      "description": "Large suite with two bedrooms, perfect for families or groups.",
+      "price": 500,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Family Suite (1).jpeg",
+      "amenities": [
+        "Free Wi-Fi",
+        "Free Breakfast",
+        "Kitchen",
+        "Living Room",
+        "Multiple Bathrooms"
+      ],
+      "capacity": 6
+    },
+    {
+      "id": 14,
+      "type": "Business Room",
+      "description": "Well-equipped room with dedicated workspace and business amenities.",
+      "price": 200,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Business Room (1).jpeg",
+      "amenities": [
+        "High-speed Wi-Fi",
+        "Free Breakfast",
+        "Work Desk",
+        "Printer Access",
+        "Coffee Maker"
+      ],
+      "capacity": 1
+    },
+    {
+      "id": 15,
+      "type": "Honeymoon Suite",
+      "description": "Romantic suite with luxury amenities and spectacular views.",
+      "price": 550,
+      "image": "/images/BGH-images/BGH - Automated Hotel Reservation Photo Album/BGH Honeymoon Suite (1).jpeg",
+      "amenities": [
+        "Free Wi-Fi",
+        "Champagne Service",
+        "Spa Bath",
+        "King Bed",
+        "Room Service"
+      ],
       "capacity": 2
     }
   ]

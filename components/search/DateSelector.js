@@ -16,7 +16,7 @@ export default function DateSelector({
         className="cursor-pointer"
         onClick={() => setShowDatePicker(!showDatePicker)}
       >
-        <h2 className="text-xl font-bold">{nights} NIGHTS</h2>
+        <h2 className="text-xl font-bold">{nights} {nights>1?'NIGHTS':'NIGHT'}</h2>
         <p className="text-gray-700">{checkInDate} - {checkOutDate}</p>
       </div>
       

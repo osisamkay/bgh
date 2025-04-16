@@ -1,24 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import roomsData from '../data/rooms.json';
+import Image from 'next/image';
+// import DatePicker from 'react-datepicker';
+// import "react-datepicker/dist/react-datepicker.css";
+
+// Utility functions for date formatting
+const formatDateForDisplay = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+};
+
+const formatDateForInput = (dateString) => {
+  const date = new Date(dateString);
+  return date.toISOString().split('T')[0];
+};
+
+const calculateNights = (checkIn, checkOut) => {
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const diffTime = Math.abs(end - start);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
 export default function Search() {
   const router = useRouter();
   
+  // Calculate max price from rooms data
+  const maxPrice = Math.max(...roomsData.rooms.map(room => room.price));
+  
   // State for filter and sort options
-  const [checkInDate, setCheckInDate] = useState('07/07/2025');
-  const [checkOutDate, setCheckOutDate] = useState('07/17/2025');
+  const [checkInDate, setCheckInDate] = useState('4/15/2025');
+  const [checkOutDate, setCheckOutDate] = useState('04/16/2025');
   const [rooms, setRooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [ratePreference, setRatePreference] = useState('Best Available ***');
-  const [priceRange, setPriceRange] = useState([32, 750]);
+  const [priceRange, setPriceRange] = useState([0, maxPrice]);
   const [selectedRoomTypes, setSelectedRoomTypes] = useState([]);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
   const [sortOption, setSortOption] = useState('Price (Low to High)');
   const [filteredRooms, setFilteredRooms] = useState([]);
+  const [error, setError] = useState('');
+  const [nights, setNights] = useState(1);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const datePickerRef = useRef(null);
 
   // Function to handle price range slider changes
   const handlePriceRangeChange = (min, max) => {
@@ -36,6 +64,28 @@ export default function Search() {
       if (router.query.rate) setRatePreference(router.query.rate);
     }
   }, [router.isReady, router.query]);
+
+  // Update nights when dates change
+  useEffect(() => {
+    const updatedNights = calculateNights(checkInDate, checkOutDate);
+    if (updatedNights > 0) {
+      setNights(updatedNights);
+    }
+  }, [checkInDate, checkOutDate]);
+
+  // Handle clicks outside the date picker
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowDatePicker(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Apply filters and sort whenever the filter criteria change
   useEffect(() => {
@@ -94,8 +144,42 @@ export default function Search() {
     }
   };
 
+  // Handle date changes
+  const handleCheckInChange = (e) => {
+    const inputDate = e.target.value;
+    const formattedDate = formatDateForDisplay(inputDate);
+    setCheckInDate(formattedDate);
+  };
+
+  const handleCheckOutChange = (e) => {
+    const inputDate = e.target.value;
+    const formattedDate = formatDateForDisplay(inputDate);
+    setCheckOutDate(formattedDate);
+  };
+
+  // Validate dates
+  const validateDates = () => {
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (checkIn >= checkOut) {
+      setError('Check-out date must be after check-in date');
+      return false;
+    }
+    if (checkIn < today) {
+      setError('Check-in date cannot be in the past');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   // Update search parameters (dates and room/guest count)
   const updateSearch = () => {
+    if (!validateDates()) return;
+
     // Apply current search parameters to URL
     router.push({
       pathname: '/search',
@@ -107,22 +191,21 @@ export default function Search() {
         rate: ratePreference
       }
     }, undefined, { shallow: true });
+  };
+
+  // Handle price slider change
+  const handlePriceSliderChange = (e) => {
+    const value = parseInt(e.target.value);
+    const isMin = e.target.dataset.type === 'min';
     
-    console.log('Updating search with:', { checkInDate, checkOutDate, rooms, guests, ratePreference });
-  };
-
-  // Mock price slider functionality
-  const handleMinPriceChange = (e) => {
-    const newMin = parseInt(e.target.value);
-    if (newMin < priceRange[1]) {
-      setPriceRange([newMin, priceRange[1]]);
-    }
-  };
-
-  const handleMaxPriceChange = (e) => {
-    const newMax = parseInt(e.target.value);
-    if (newMax > priceRange[0]) {
-      setPriceRange([priceRange[0], newMax]);
+    if (isMin) {
+      if (value < priceRange[1]) {
+        setPriceRange([value, priceRange[1]]);
+      }
+    } else {
+      if (value > priceRange[0]) {
+        setPriceRange([priceRange[0], value]);
+      }
     }
   };
 
@@ -139,39 +222,57 @@ export default function Search() {
       {/* Search Form - Styled to match the image */}
       <div className="bg-white py-4 border-b border-gray-200">
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="flex flex-col">
+          <div className="flex flex-col" ref={datePickerRef}>
             <label className="text-sm text-gray-700 mb-1">Check-in-Date</label>
             <div className="relative">
-              <input 
-                type="text" 
-                value={checkInDate} 
-                onChange={(e) => setCheckInDate(e.target.value)}
-                className="border border-gray-300 p-2 w-full bg-gray-100 rounded"
-                readOnly
-              />
-              <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </span>
+              <div 
+                className="border border-gray-300 p-2 w-full bg-gray-100 rounded cursor-pointer"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+              >
+                {checkInDate}
+              </div>
+              {showDatePicker && (
+                <div className="absolute top-full left-0 mt-2 bg-white p-4 shadow-xl rounded-lg z-50 w-64 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Select Your Dates</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
+                      <input 
+                        type="date" 
+                        value={formatDateForInput(checkInDate)}
+                        onChange={handleCheckInChange}
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
+                      <input 
+                        type="date" 
+                        value={formatDateForInput(checkOutDate)}
+                        onChange={handleCheckOutChange}
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <button 
+                        onClick={() => setShowDatePicker(false)}
+                        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Apply Dates
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Check-out-Date</label>
             <div className="relative">
-              <input 
-                type="text" 
-                value={checkOutDate} 
-                onChange={(e) => setCheckOutDate(e.target.value)}
-                className="border border-gray-300 p-2 w-full bg-gray-100 rounded"
-                readOnly
-              />
-              <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </span>
+              <div className="border border-gray-300 p-2 w-full bg-gray-100 rounded">
+                {checkOutDate}
+              </div>
             </div>
           </div>
           
@@ -220,20 +321,30 @@ export default function Search() {
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Rate Preference</label>
             <div className="relative">
-              <input 
-                type="text" 
+              <select 
                 value={ratePreference} 
                 onChange={(e) => setRatePreference(e.target.value)}
-                className="border border-gray-300 p-2 w-full bg-gray-100 rounded"
-                readOnly
-              />
+                className="border border-gray-300 p-2 w-full appearance-none bg-gray-100 rounded pr-8"
+              >
+                <option value="Best Available ***">Best Available ***</option>
+                <option value="AAA Rate">AAA Rate</option>
+                <option value="Senior Rate">Senior Rate</option>
+                <option value="Military Rate">Military Rate</option>
+                <option value="Government Rate">Government Rate</option>
+              </select>
+              <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </span>
             </div>
           </div>
           
           <div className="flex flex-col justify-end">
+            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             <button 
               onClick={updateSearch}
-              className="bg-gray-800 text-white px-6 py-2 rounded font-medium"
+              className="bg-gray-800 text-white px-6 py-2 rounded font-medium hover:bg-gray-700 transition-colors"
             >
               UPDATE SEARCH
             </button>
@@ -250,34 +361,49 @@ export default function Search() {
             
             {/* Price Filter */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-2">Price</h3>
-              <div className="relative h-6 mb-2">
-                <div className="absolute h-1 w-full bg-gray-200 top-1/2 transform -translate-y-1/2 rounded"></div>
-                <div className="absolute h-1 bg-red-500" style={{ 
-                  left: `${(priceRange[0] - 32) / (750 - 32) * 100}%`, 
-                  right: `${100 - (priceRange[1] - 32) / (750 - 32) * 100}%`,
-                  top: '50%',
-                  transform: 'translateY(-50%)'
-                }}></div>
-              </div>
-              <div className="flex justify-between items-center">
-                <input 
-                  type="number" 
-                  min="32" 
-                  max={priceRange[1] - 1} 
-                  value={priceRange[0]} 
-                  onChange={handleMinPriceChange}
-                  className="w-16 p-1 text-sm border rounded"
+              <h3 className="font-semibold mb-4">Price</h3>
+              <div className="relative h-2 mb-8">
+                {/* Background track */}
+                <div className="absolute h-full w-full bg-gray-200 rounded"></div>
+                
+                {/* Active track */}
+                <div 
+                  className="absolute h-full bg-amber-500 rounded"
+                  style={{
+                    left: `${(priceRange[0] / maxPrice) * 100}%`,
+                    right: `${100 - (priceRange[1] / maxPrice) * 100}%`
+                  }}
+                ></div>
+
+                {/* Min handle */}
+                <input
+                  type="range"
+                  min="0"
+                  max={maxPrice}
+                  value={priceRange[0]}
+                  data-type="min"
+                  onChange={handlePriceSliderChange}
+                  className="absolute w-full h-full opacity-0 cursor-pointer"
                 />
-                <span className="text-sm">to</span>
-                <input 
-                  type="number" 
-                  min={priceRange[0] + 1} 
-                  max="750" 
-                  value={priceRange[1]} 
-                  onChange={handleMaxPriceChange}
-                  className="w-16 p-1 text-sm border rounded"
+
+                {/* Max handle */}
+                <input
+                  type="range"
+                  min="0"
+                  max={maxPrice}
+                  value={priceRange[1]}
+                  data-type="max"
+                  onChange={handlePriceSliderChange}
+                  className="absolute w-full h-full opacity-0 cursor-pointer"
                 />
+
+                {/* Price labels */}
+                <div className="absolute -bottom-8 left-0 transform -translate-x-1/2">
+                  <span className="text-sm font-medium">${priceRange[0]}</span>
+                </div>
+                <div className="absolute -bottom-8 right-0 transform translate-x-1/2">
+                  <span className="text-sm font-medium">${priceRange[1]}</span>
+                </div>
               </div>
             </div>
             
@@ -295,7 +421,7 @@ export default function Search() {
                       className="h-4 w-4 mr-2"
                     />
                     <label htmlFor={`type-${type}`} className="text-sm flex-grow">{type}</label>
-                    <span className="text-gray-600">▶</span>
+                    <Image   src="/images/play-svgrepo-com.svg" alt="arrow" width={10} height={10} />
                   </div>
                 ))}
               </div>
@@ -315,7 +441,7 @@ export default function Search() {
                       className="h-4 w-4 mr-2"
                     />
                     <label htmlFor={`amenity-${amenity}`} className="text-sm flex-grow">{amenity}</label>
-                    <span className="text-gray-600">▶</span>
+                    <Image src="/images/play-svgrepo-com.svg" alt="arrow" width={10} height={10} />
                   </div>
                 ))}
               </div>
@@ -326,7 +452,7 @@ export default function Search() {
               onClick={() => {
                 setSelectedRoomTypes([]);
                 setSelectedAmenities([]);
-                setPriceRange([32, 750]);
+                setPriceRange([0, maxPrice]);
                 setGuests(1);
               }}
               className="text-blue-600 hover:underline text-sm"
@@ -366,38 +492,38 @@ export default function Search() {
             <div className="space-y-6">
               {filteredRooms.length > 0 ? (
                 filteredRooms.map((room) => (
-                  <div key={room.id} className="border border-gray-300 rounded overflow-hidden">
-                    <div className="flex flex-col md:flex-row">
-                      {/* Room Image */}
-                      <div className="w-full md:w-1/3 h-64 bg-gray-200 relative">
-                        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
-                          <span className="text-gray-600 font-medium">{room.type}</span>
-                        </div>
+                  <div key={room.id} className="flex gap-6 bg-white">
+                    {/* Room Image */}
+                    <div className="w-80 h-48 relative">
+                      <Image
+                        src={room.image}
+                        alt={room.type}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        priority={room.id <= 2}
+                      />
+                    </div>
+                    
+                    {/* Room Details */}
+                    <div className="flex-1 py-2">
+                      <h3 className="text-xl font-bold mb-2">{room.type}</h3>
+                      <p className="text-gray-700 mb-4">{room.description}</p>
+                      
+                      {/* Amenities */}
+                      <div className="text-gray-700 mb-4">
+                        {room.amenities.join(', ')}
                       </div>
                       
-                      {/* Room Info */}
-                      <div className="w-full md:w-2/3 p-6 flex flex-col">
-                        <h3 className="text-xl font-bold mb-2">{room.type}</h3>
-                        <p className="text-gray-600 mb-4">{room.description}</p>
-                        
-                        {/* Amenities */}
-                        <div className="flex flex-wrap gap-3 mb-4">
-                          {room.amenities.map((amenity, idx) => (
-                            <span key={idx} className="text-gray-700 text-sm">{amenity}</span>
-                          ))}
+                      {/* Price and Select Button */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-right">
+                          <span className="text-xl font-bold">${room.price} / night</span>
                         </div>
-                        
-                        {/* Price and Book */}
-                        <div className="mt-auto flex justify-between items-center">
-                          <div className="text-right">
-                            <span className="block text-xl font-bold">${room.price} / night</span>
-                          </div>
-                          <Link href={`/room/${room.id}`}>
-                            <button className="bg-gray-800 text-white px-4 py-2 rounded">
-                              Select Room
-                            </button>
-                          </Link>
-                        </div>
+                        <Link href={`/room/${room.id}`}>
+                          <button className="bg-[#1a2b3b] text-white px-6 py-2 rounded hover:bg-[#2c3e50] transition-colors">
+                            Select Room
+                          </button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -410,7 +536,7 @@ export default function Search() {
                     onClick={() => {
                       setSelectedRoomTypes([]);
                       setSelectedAmenities([]);
-                      setPriceRange([32, 750]);
+                      setPriceRange([0, maxPrice]);
                       setGuests(1);
                     }}
                     className="mt-4 text-blue-600 hover:underline"
