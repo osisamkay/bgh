@@ -366,8 +366,8 @@ export default function Search() {
                     height: 18px;
                     width: 18px;
                     border-radius: 50%;
-                    border: 2px solid #d4af37;
-                    background: #d4af37;
+                    border: 2px solid transparent;
+                    background: transparent;
                     cursor: pointer;
                     pointer-events: auto;
                     margin-top: -6px;
@@ -383,17 +383,36 @@ export default function Search() {
                   }
                 `}</style>
                 <div className="relative h-[50px]">
-                  {/* Base track */}
-                  <div className="absolute w-full h-[5px] top-1/2 -translate-y-1/2 bg-[#d4af37] rounded"></div>
-                  
-                  {/* Selected range */}
-                  <div 
-                    className="absolute h-[5px] top-1/2 -translate-y-1/2 bg-[#d4af37] rounded"
-                    style={{
-                      left: `${(priceRange[0] / maxPrice) * 100}%`,
-                      width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`
-                    }}
-                  ></div>
+                  {/* Track with values */}
+                  <div className="absolute w-full h-[24px] top-1/2 -translate-y-1/2  rounded-full flex items-center px-2 text-xs">
+                    <div className="relative w-full h-full flex items-center">
+                      {/* Background track */}
+                      <div className="absolute w-full h-[5px] bg-[#d4af37] rounded-full"></div>
+                      
+                      {/* Selected range */}
+                      <div 
+                        className="absolute h-[5px] bg-[#d4af37] rounded-full"
+                        style={{
+                          left: `${(priceRange[0] / maxPrice) * 100}%`,
+                          width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`
+                        }}
+                      ></div>
+
+                      {/* Price labels */}
+                      <div 
+                        className="absolute text-[12px] bg-white px-2 py-1 rounded-full border border-gray-300 font-medium"
+                        style={{ left: `${(priceRange[0] / maxPrice) * 100}%`, transform: 'translateX(-50%)' }}
+                      >
+                        ${priceRange[0]}
+                      </div>
+                      <div 
+                        className="absolute text-[12px] bg-white px-2 py-1 rounded-full border border-gray-300 font-bold"
+                        style={{ left: `${(priceRange[1] / maxPrice) * 100}%`, transform: 'translateX(-50%)' }}
+                      >
+                        ${priceRange[1]}
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Range inputs */}
                   <input
@@ -420,16 +439,6 @@ export default function Search() {
                     className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ zIndex: 2 }}
                   />
-                </div>
-                
-                {/* Price labels */}
-                <div className="flex justify-between mt-4">
-                  <span className="text-sm font-medium bg-white px-2 py-1 rounded shadow-sm border">
-                    ${priceRange[0]}
-                  </span>
-                  <span className="text-sm font-medium bg-white px-2 py-1 rounded shadow-sm border">
-                    ${priceRange[1]}
-                  </span>
                 </div>
               </div>
             </div>
