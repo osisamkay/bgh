@@ -387,11 +387,11 @@ export default function Search() {
                   <div className="absolute w-full h-[24px] top-1/2 -translate-y-1/2  rounded-full flex items-center px-2 text-xs">
                     <div className="relative w-full h-full flex items-center">
                       {/* Background track */}
-                      <div className="absolute w-full h-[5px] bg-[#d4af37] rounded-full"></div>
+                      <div className="absolute w-full h-[10px] bg-gray-200 rounded-full"></div>
                       
                       {/* Selected range */}
                       <div 
-                        className="absolute h-[5px] bg-[#d4af37] rounded-full"
+                        className="absolute h-[10px] bg-[#d4af37] rounded-full"
                         style={{
                           left: `${(priceRange[0] / maxPrice) * 100}%`,
                           width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`
