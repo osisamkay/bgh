@@ -15,13 +15,14 @@ export default async function handler(req, res) {
       }
     });
 
-    // Parse amenities from JSON string
-    const roomsWithParsedAmenities = rooms.map(room => ({
+    // Parse JSON strings for images and amenities
+    const parsedRooms = rooms.map(room => ({
       ...room,
-      amenities: room.amenities ? JSON.parse(room.amenities) : []
+      images: JSON.parse(room.images),
+      amenities: JSON.parse(room.amenities)
     }));
 
-    return res.status(200).json(roomsWithParsedAmenities);
+    return res.status(200).json(parsedRooms);
   } catch (error) {
     console.error('Error fetching rooms:', error);
     return res.status(500).json({ error: 'Failed to fetch rooms' });

@@ -90,7 +90,6 @@ export default async function handler(req, res) {
           data: {
             name: fullName,
             email: email.toLowerCase(),
-            phone,
             password: 'temporary', // Will be updated when user sets their password
             streetAddress: '',
             city: '',
@@ -98,7 +97,9 @@ export default async function handler(req, res) {
             province: '',
             country: '',
             termsAccepted: true,
-            role: 'GUEST'
+            role: 'GUEST',
+            firstName: fullName.split(' ')[0] || '',
+            lastName: fullName.split(' ').slice(1).join(' ') || ''
           }
         });
       }
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
           roomId: room.id,
           checkInDate: new Date(checkInDate),
           checkOutDate: new Date(checkOutDate),
-          numberOfGuests,
+          numberOfGuests: parseInt(numberOfGuests, 10),
           specialRequests,
           status: 'PENDING',
           totalPrice,

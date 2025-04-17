@@ -110,11 +110,13 @@ model CheckInDetails {
 
 model Room {
     id          String    @id @default(cuid())
-    number      String    @unique
+    roomNumber  String    @unique
     type        String
     status      String    @default("AVAILABLE")
     price       Float
     description String?
+    image       String?
+    images      String? // JSON string of image URLs
     amenities   String? // JSON string of amenities
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt

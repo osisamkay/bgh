@@ -4,14 +4,13 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../../components/Header';
-import roomsData from '../../data/rooms.json';
 import { useNotification } from '../../contexts/NotificationContext';
 import ReservationForm from '../../components/reservation/ReservationForm';
 import ReservationSuccess from '../../components/reservation/ReservationSuccess';
 
 export default function ReservationPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, checkIn, checkOut, guests } = router.query;
   const [room, setRoom] = useState(null);
   const [reservation, setReservation] = useState(null);
   const [formData, setFormData] = useState({
@@ -21,9 +20,9 @@ export default function ReservationPage() {
     specialRequests: '',
     roomId: id,
     agreeToTerms: false,
-    checkInDate: router.query.checkIn || '',
-    checkOutDate: router.query.checkOut || '',
-    guests: router.query.guests ? parseInt(router.query.guests) : 1
+    checkInDate: checkIn || '',
+    checkOutDate: checkOut || '',
+    guests: guests ? parseInt(guests) : 1
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,28 +30,34 @@ export default function ReservationPage() {
   const { addNotification, showNotification } = useNotification();
 
   useEffect(() => {
-    if (id) {
-      const selectedRoom = roomsData.rooms.find(r => r.id === parseInt(id));
-      if (selectedRoom) {
-        setRoom(selectedRoom);
-        setIsLoading(false);
+    const fetchRoom = async () => {
+      if (id) {
+        try {
+          const response = await fetch(`/api/rooms/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch room');
+          }
+          const data = await response.json();
+          setRoom(data);
+          setIsLoading(false);
 
-        // Get URL parameters
-        const { checkIn, checkOut, guests } = router.query;
-        
-        // Update form data with URL parameters
-        setFormData(prev => ({
-          ...prev,
-          checkInDate: checkIn || prev.checkInDate,
-          checkOutDate: checkOut || prev.checkOutDate,
-          guests: guests ? parseInt(guests) : prev.guests,
-          roomId: parseInt(id)
-        }));
-      } else {
-        router.push('/search');
+          // Update form data with URL parameters
+          setFormData(prev => ({
+            ...prev,
+            checkInDate: checkIn || prev.checkInDate,
+            checkOutDate: checkOut || prev.checkOutDate,
+            guests: guests ? parseInt(guests) : prev.guests,
+            roomId: id
+          }));
+        } catch (error) {
+          console.error('Error fetching room:', error);
+          router.push('/search');
+        }
       }
-    }
-  }, [id, router.query]);
+    };
+
+    fetchRoom();
+  }, [id, checkIn, checkOut, guests]);
 
   // Format date for display
   const formatDateForDisplay = (dateString) => {
@@ -131,7 +136,6 @@ export default function ReservationPage() {
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
-        
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -148,8 +152,6 @@ export default function ReservationPage() {
         <title>Reserve {room.type} - Best Garden Hotel</title>
         <meta name="description" content={`Reserve your stay at ${room.type}`} />
       </Head>
-
-      
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -203,14 +205,16 @@ export default function ReservationPage() {
                   onSubmit={handleSubmit}
                   isSubmitting={isSubmitting}
                   error={error}
+                  onReservationComplete={(reservationData) => {
+                    setReservation(reservationData);
+                    showNotification('Reservation created successfully!', 'success');
+                  }}
                 />
               )}
             </div>
           </div>
         </div>
       </main>
-
-      
     </div>
   );
 }
