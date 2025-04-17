@@ -1,0 +1,20 @@
+{
+    "payments": [],
+    "paymentMethods": [
+        {
+            "id": "card",
+            "name": "Credit/Debit Card",
+            "icon": "credit-card"
+        },
+        {
+            "id": "gcash",
+            "name": "GCash",
+            "icon": "gcash"
+        },
+        {
+            "id": "maya",
+            "name": "Maya",
+            "icon": "maya"
+        }
+    ]
+}

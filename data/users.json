@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": "97b675e2-0a7c-4f16-8f08-ed766d3f9880",
+      "email": "osisami.oj@gmail.com",
+      "firstName": "Olukayode",
+      "lastName": "Osisami",
+      "password": "$2b$10$ME.wxnociqucwZl18GLY1.vV/zwEc7MMmYYniV0q2iPR.06TocVWm",
+      "streetAddress": "311 - 20 Auburn Bay Street",
+      "city": "CALGARY",
+      "postalCode": "T3M2M4",
+      "province": "AB",
+      "country": "Canada",
+      "isVerified": true,
+      "createdAt": "2025-04-17T06:40:28.546Z",
+      "updatedAt": "2025-04-17T06:40:28.546Z",
+      "lastLogin": "2025-04-17T07:40:51.998Z"
+    }
+  ]
+}

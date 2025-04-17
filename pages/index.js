@@ -21,11 +21,11 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Header />
+      
       <ImageSlider />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 sm:py-8">
+     
         <HotelInfo />
         <SearchBox />
         <AmenitiesSection />
@@ -34,9 +34,9 @@ export default function Home() {
         <EventsSection />
         <LocationSection />
         <BreakfastSection />
-      </main>
+    
 
-      <Footer />
+    
     </div>
   )
 }

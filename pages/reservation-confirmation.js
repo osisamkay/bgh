@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Header from '../components/Header';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function ReservationConfirmation() {
   const router = useRouter();
@@ -68,7 +68,7 @@ export default function ReservationConfirmation() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -83,7 +83,7 @@ export default function ReservationConfirmation() {
   if (error === 'cancelled') {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 text-center">
             <div className="mb-6">
@@ -105,7 +105,7 @@ export default function ReservationConfirmation() {
   if (error === 'not_found' || !reservation) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Reservation Not Found</h1>
@@ -126,7 +126,7 @@ export default function ReservationConfirmation() {
         <meta name="description" content="Your reservation confirmation at Best Garden Hotel" />
       </Head>
 
-      <Header />
+      
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
@@ -219,9 +219,7 @@ export default function ReservationConfirmation() {
         </div>
       </main>
 
-      <footer className="bg-amber-500 text-center py-4 mt-8" style={{ backgroundColor: "#d4b053" }}>
-        <p className="text-white">© 2025 BGH. All rights reserved.</p>
-      </footer>
+      
     </div>
   );
 }

@@ -1,3 +1,112 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 min-h-screen;
+}
+
+/* Layout styles */
+.container {
+  @apply max-w-7xl mx-auto;
+}
+
+/* Common components */
+.btn {
+  @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-amber-500 text-white hover:bg-amber-600;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+}
+
+/* Animations */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 200ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
+/* Scroll to top button */
+.scroll-to-top {
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+/* Form styles */
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-error {
+  @apply text-red-600 text-sm mt-1;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg shadow-md overflow-hidden;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200;
+}
+
+.card-body {
+  @apply px-6 py-4;
+}
+
+.card-footer {
+  @apply px-6 py-4 border-t border-gray-200;
+}
+
+/* Navigation styles */
+.nav-link {
+  @apply text-gray-600 hover:text-gray-900 transition-colors duration-200;
+}
+
+.nav-link-active {
+  @apply text-amber-500 hover:text-amber-600;
+}
+
+/* Responsive utilities */
+@screen sm {
+  .container {
+    @apply px-6;
+  }
+}
+
+@screen md {
+  .container {
+    @apply px-8;
+  }
+}
+
+@screen lg {
+  .container {
+    @apply px-10;
+  }
+}

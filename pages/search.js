@@ -271,7 +271,7 @@ export default function Search() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Header />
+      
 
       {/* Search Form - Styled to match the image */}
       <div className="bg-white py-4 border-b border-gray-200">
@@ -681,8 +681,9 @@ export default function Search() {
                           </div>
                           <Link 
                             href={{
-                              pathname: `/room/${room.id}`,
+                              pathname: '/register',
                               query: {
+                                redirect: `/room/${room.id}`,
                                 checkIn: checkInDate,
                                 checkOut: checkOutDate,
                                 guests: guests
@@ -789,9 +790,7 @@ export default function Search() {
         </div>
       </main>
 
-      <footer className="bg-amber-500 text-center py-4 mt-8" style={{ backgroundColor: "#d4b053" }}>
-        <p className="text-white">© 2025 BGH. All rights reserved.</p>
-      </footer>
+      
     </div>
   );
 }

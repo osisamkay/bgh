@@ -61,7 +61,7 @@ export default function RoomDetails() {
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-96 bg-gray-200 rounded-lg mb-8"></div>
@@ -82,7 +82,7 @@ export default function RoomDetails() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Header />
+      
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -314,22 +314,15 @@ export default function RoomDetails() {
         {/* Booking Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
           <Link 
-            href={`/reserve/${id}`}
+            href={`/register?redirect=/reserve/${id}`}
             className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors inline-block"
           >
-            RESERVE ROOM
-          </Link>
-          <button 
-            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors"
-          >
             BOOK ROOM
-          </button>
+          </Link>
         </div>
       </main>
 
-      <footer className="bg-amber-500 text-center py-4 mt-8" style={{ backgroundColor: "#d4b053" }}>
-        <p className="text-white">© 2025 BGH. All rights reserved.</p>
-      </footer>
+      
     </div>
   );
 }

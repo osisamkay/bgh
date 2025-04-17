@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 const CheckReservation = () => {
   const router = useRouter();
@@ -34,6 +34,7 @@ const CheckReservation = () => {
 
       setReservation(data);
       addNotification('Reservation found successfully!', 'success');
+      router.push(`/reservation/${reservationId}`);
     } catch (err) {
       addNotification(err.message || 'Reservation not found. Please check your ID and try again.', 'error');
       setReservation(null);
@@ -102,7 +103,7 @@ const CheckReservation = () => {
         <meta name="description" content="Check your reservation status" />
       </Head>
 
-      <Header />
+      
 
       <main className="container mx-auto px-4 py-8">
         <div className=" mx-auto">
@@ -363,9 +364,7 @@ const CheckReservation = () => {
         </div>
       )}
 
-     {!reservation? "": <footer className="bg-amber-500 text-center py-4 mt-8" style={{ backgroundColor: "#d4b053" }}>
-        <p className="text-white">© 2025 BGH. All rights reserved.</p>
-      </footer>}
+     
     </div>
   );
 };

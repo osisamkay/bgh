@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import roomsData from '../../data/rooms.json';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 export default function ReservationPage() {
   const router = useRouter();
@@ -127,7 +127,7 @@ export default function ReservationPage() {
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -145,7 +145,7 @@ export default function ReservationPage() {
         <meta name="description" content={`Reserve your stay at ${room.type}`} />
       </Head>
 
-      <Header />
+      
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -293,9 +293,7 @@ export default function ReservationPage() {
         </div>
       </main>
 
-      <footer className="bg-amber-500 text-center py-4 mt-8" style={{ backgroundColor: "#d4b053" }}>
-        <p className="text-white">© 2025 BGH. All rights reserved.</p>
-      </footer>
+      
     </div>
   );
 }

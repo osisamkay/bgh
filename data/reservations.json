@@ -1,17 +1,3 @@
 {
-  "reservations": [
-    {
-      "id": "e037541d-1d37-4a60-bb3b-9f44b747c59d",
-      "fullName": "Thor Perkins",
-      "email": "hegotun@mailinator.com",
-      "phoneNumber": "5875831623",
-      "specialRequests": "Eum ipsum necessita",
-      "roomId": 2,
-      "status": "pending",
-      "createdAt": "2025-04-16T21:13:35.854Z",
-      "expiresAt": "2025-04-17T21:13:35.854Z",
-      "roomType": "Twin Deluxe Room",
-      "price": 125
-    }
-  ]
+  "reservations": []
 }

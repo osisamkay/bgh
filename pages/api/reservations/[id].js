@@ -1,3 +1,4 @@
+import { verifyToken } from '../../../utils/auth';
 import fs from 'fs';
 import path from 'path';
 import { sendCancellationEmail } from '../../../utils/emailService';
@@ -18,59 +19,46 @@ export default async function handler(req, res) {
 
   const { id } = req.query;
 
+  if (req.method !== 'DELETE') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   try {
-    // Read the reservations file
-    const reservationsContent = fs.readFileSync(RESERVATIONS_FILE, 'utf8');
-    const reservationsData = JSON.parse(reservationsContent);
-
-    // GET request - Fetch reservation details
-    if (req.method === 'GET') {
-      const reservation = reservationsData.reservations.find(r => r.id === id);
-
-      if (!reservation) {
-        return res.status(404).json({ message: 'Reservation not found' });
-      }
-
-      // Check if reservation is cancelled
-      if (reservation.status === 'cancelled') {
-        return res.status(403).json({ 
-          message: 'This reservation has been cancelled',
-          status: 'cancelled'
-        });
-      }
-
-      return res.status(200).json(reservation);
+    // Verify the user's token
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // DELETE request - Cancel reservation
-    if (req.method === 'DELETE') {
-      const reservationIndex = reservationsData.reservations.findIndex(r => r.id === id);
-
-      if (reservationIndex === -1) {
-        return res.status(404).json({ message: 'Reservation not found' });
-      }
-
-      // Update reservation status to cancelled
-      reservationsData.reservations[reservationIndex] = {
-        ...reservationsData.reservations[reservationIndex],
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString()
-      };
-
-      // Write back to file
-      fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservationsData, null, 2));
-
-      return res.status(200).json({ 
-        message: 'Reservation cancelled successfully',
-        status: 'cancelled'
-      });
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
     }
 
-    // Method not allowed
-    res.setHeader('Allow', ['GET', 'DELETE']);
-    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    // Read reservations from file
+    const reservationsData = fs.readFileSync(RESERVATIONS_FILE, 'utf8');
+    const reservations = JSON.parse(reservationsData);
+
+    // Find the reservation
+    const reservationIndex = reservations.findIndex(r => r.id === id);
+    if (reservationIndex === -1) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    // Check if the reservation belongs to the user
+    if (reservations[reservationIndex].userId !== decoded.userId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    // Remove the reservation
+    reservations.splice(reservationIndex, 1);
+
+    // Save the updated reservations
+    fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservations, null, 2));
+
+    return res.status(200).json({ message: 'Reservation cancelled successfully' });
   } catch (error) {
-    console.error('Error handling reservation request:', error);
+    console.error('Error in cancel reservation API:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
