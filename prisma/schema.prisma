@@ -6,22 +6,216 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+    provider = "sqlite"
+    url      = "file:./dev.db"
 }
 
 model User {
-    id            String   @id @default(cuid())
-    firstName     String
-    lastName      String
-    email         String   @unique
-    password      String
-    streetAddress String
-    city          String
-    postalCode    String
-    province      String
-    country       String
-    termsAccepted Boolean
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
+    id               String            @id @default(cuid())
+    name             String
+    email            String            @unique
+    password         String
+    role             String
+    firstName        String
+    lastName         String
+    streetAddress    String
+    city             String
+    postalCode       String
+    province         String
+    country          String
+    termsAccepted    Boolean
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+    bookings         Booking[]
+    payments         Payment[]
+    refunds          Refund[]
+    employeeLogs     EmployeeLog[]
+    reportFilters    ReportFilter[]
+    reportLogs       ReportLog[]
+    scheduledReports ScheduledReport[]
+    notifications    Notification[]
+}
+
+model Notification {
+    id        String   @id @default(cuid())
+    type      String
+    userId    String
+    bookingId String
+    status    String   @default("PENDING")
+    attempts  Int      @default(0)
+    data      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id])
+    booking   Booking  @relation(fields: [bookingId], references: [id])
+
+    @@index([userId])
+    @@index([bookingId])
+}
+
+model EmployeeLog {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    action    String
+    details   String
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+}
+
+model Payment {
+    id        String   @id @default(cuid())
+    bookingId String   @unique
+    booking   Booking  @relation(fields: [bookingId], references: [id])
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    amount    Float
+    method    String
+    status    String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+model Refund {
+    id        String   @id @default(cuid())
+    bookingId String   @unique
+    booking   Booking  @relation(fields: [bookingId], references: [id])
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    amount    Float
+    reason    String
+    status    String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+model CheckInDetails {
+    id              String   @id @default(cuid())
+    bookingId       String   @unique
+    roomNumber      String
+    idType          String
+    idNumber        String
+    specialRequests String?
+    checkedInBy     String
+    checkedInAt     DateTime @default(now())
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+    booking         Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model Room {
+    id          String    @id @default(cuid())
+    number      String    @unique
+    type        String
+    status      String    @default("AVAILABLE")
+    price       Float
+    description String?
+    amenities   String? // JSON string of amenities
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    bookings    Booking[]
+}
+
+model Charge {
+    id          String          @id @default(cuid())
+    bookingId   String
+    description String
+    amount      Float
+    date        DateTime        @default(now())
+    status      String          @default("PENDING") // PENDING, PAID, DISPUTED
+    createdAt   DateTime        @default(now())
+    updatedAt   DateTime        @updatedAt
+    booking     Booking         @relation(fields: [bookingId], references: [id])
+    disputes    ChargeDispute[]
+}
+
+model ChargeDispute {
+    id         String   @id @default(cuid())
+    bookingId  String
+    notes      String
+    disputedBy String
+    disputedAt DateTime @default(now())
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    booking    Booking  @relation(fields: [bookingId], references: [id])
+    charges    Charge[]
+}
+
+model CheckOutDetails {
+    id           String   @id @default(cuid())
+    bookingId    String   @unique
+    checkedOutBy String
+    checkedOutAt DateTime @default(now())
+    keyReturned  Boolean  @default(true)
+    feedback     String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    booking      Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model Booking {
+    id              String           @id @default(cuid())
+    userId          String
+    roomId          String
+    checkInDate     DateTime
+    checkOutDate    DateTime
+    numberOfGuests  Int
+    specialRequests String?
+    status          String           @default("PENDING")
+    totalPrice      Float
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    user            User             @relation(fields: [userId], references: [id])
+    room            Room             @relation(fields: [roomId], references: [id])
+    payment         Payment?
+    refund          Refund?
+    checkInDetails  CheckInDetails?
+    checkOutDetails CheckOutDetails?
+    charges         Charge[]
+    notifications   Notification[]
+    disputes        ChargeDispute[]
+}
+
+model ReportFilter {
+    id        String   @id @default(cuid())
+    name      String
+    filters   String
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+model ReportLog {
+    id           String   @id @default(cuid())
+    userId       String
+    user         User     @relation(fields: [userId], references: [id])
+    reportType   String
+    exportStatus String
+    createdAt    DateTime @default(now())
+
+    @@index([userId])
+}
+
+model ScheduledReport {
+    id             String    @id @default(cuid())
+    type           String
+    schedule       String
+    email          String
+    filters        String
+    lastGenerated  DateTime?
+    nextGeneration DateTime
+    userId         String
+    user           User      @relation(fields: [userId], references: [id])
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
+
+    @@index([userId])
 }

@@ -18,6 +18,8 @@ export default function RoomDetails() {
     guests: 1
   });
 
+  const { checkIn, checkOut, guests } = router.query;
+
   useEffect(() => {
     if (id) {
       const selectedRoom = roomsData.rooms.find(r => r.id === parseInt(id));
@@ -312,6 +314,21 @@ export default function RoomDetails() {
         </div>
 
         {/* Booking Buttons */}
+        <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+          <Link 
+             href={{
+                              pathname: `/reserve/${room.id}`,
+                              query: {
+                                checkIn: checkInDate,
+                                checkOut: checkOutDate,
+                                guests: guests
+                              }
+                            }}
+            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors inline-block"
+          >
+            Reserve Room
+          </Link>
+        </div>
         <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
           <Link 
             href={`/register?redirect=/reserve/${id}`}

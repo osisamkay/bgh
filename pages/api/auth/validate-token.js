@@ -1,19 +1,15 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 
-const USERS_FILE = path.join(process.cwd(), 'data', 'users.json');
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function POST(req) {
   try {
-    // Get token from Authorization header
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided' });
+      return NextResponse.json(
+        { error: 'No token provided' },
+        { status: 401 }
+      );
     }
 
     const token = authHeader.split(' ')[1];
@@ -21,36 +17,49 @@ export default async function handler(req, res) {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Read users data
-    const usersData = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    
-    // Find user
-    const user = usersData.users.find(u => u.id === decoded.userId);
-    
+    // Find user in database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     if (!user.isVerified) {
-      return res.status(401).json({ message: 'Email not verified' });
+      return NextResponse.json(
+        { error: 'Email not verified' },
+        { status: 401 }
+      );
     }
 
     // Return user data without password
     const { password, ...userWithoutPassword } = user;
-    res.status(200).json({
+    return NextResponse.json({
       success: true,
       user: userWithoutPassword
     });
-
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Invalid token' });
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
     }
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expired' });
+      return NextResponse.json(
+        { error: 'Token expired' },
+        { status: 401 }
+      );
     }
     
     console.error('Token validation error:', error);
-    res.status(500).json({ message: 'Error validating token' });
+    return NextResponse.json(
+      { error: 'Error validating token' },
+      { status: 500 }
+    );
   }
 } 

@@ -6,11 +6,14 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 import roomsData from '../../data/rooms.json';
 import { useNotification } from '../../contexts/NotificationContext';
+import ReservationForm from '../../components/reservation/ReservationForm';
+import ReservationSuccess from '../../components/reservation/ReservationSuccess';
 
 export default function ReservationPage() {
   const router = useRouter();
   const { id } = router.query;
   const [room, setRoom] = useState(null);
+  const [reservation, setReservation] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -25,7 +28,7 @@ export default function ReservationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { addNotification } = useNotification();
+  const { addNotification, showNotification } = useNotification();
 
   useEffect(() => {
     if (id) {
@@ -116,7 +119,8 @@ export default function ReservationPage() {
       }
 
       const data = await response.json();
-      router.push(`/reservation-confirmation?id=${data.id}`);
+      setReservation(data);
+      showNotification('Reservation created successfully!', 'success');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -189,105 +193,18 @@ export default function ReservationPage() {
             <div className="bg-white rounded-lg">
               <h2 className="text-2xl font-bold mb-8">Complete your Reservation</h2>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
-
-                <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="Enter your email address"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-2">
-                    Special Requests
-                  </label>
-                  <textarea
-                    id="specialRequests"
-                    name="specialRequests"
-                    value={formData.specialRequests}
-                    onChange={handleInputChange}
-                    rows="4"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                    placeholder="Enter any special requests or requirements"
-                  ></textarea>
-                </div>
-
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="agreeToTerms"
-                    name="agreeToTerms"
-                    checked={formData.agreeToTerms}
-                    onChange={handleInputChange}
-                    className="mt-1 h-4 w-4 text-amber-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="agreeToTerms" className="ml-2 text-sm text-gray-600">
-                    I have read and accept the{' '}
-                    <Link href="/terms" className="text-blue-600 hover:underline">
-                      terms and conditions
-                    </Link>
-                    .
-                  </label>
-                </div>
-
-                {error && (
-                  <div className="text-red-600 text-sm">{error}</div>
-                )}
-
-                <div className="mt-8">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-[#1a2b3b] text-white py-4 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors disabled:bg-gray-400"
-                  >
-                    {isSubmitting ? 'Processing...' : 'RESERVE ROOM'}
-                  </button>
-                </div>
-
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Note: This room will be held for 1 hour.</p>
-                  <p className="mt-1">To confirm your reservation, please proceed to booking and payment.</p>
-                </div>
-              </form>
+              {reservation ? (
+                <ReservationSuccess reservation={reservation} />
+              ) : (
+                <ReservationForm
+                  room={room}
+                  formData={formData}
+                  onInputChange={handleInputChange}
+                  onSubmit={handleSubmit}
+                  isSubmitting={isSubmitting}
+                  error={error}
+                />
+              )}
             </div>
           </div>
         </div>

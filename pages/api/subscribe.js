@@ -1,23 +1,31 @@
-import sgMail from '@sendgrid/mail';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/utils/email';
 
-// Initialize SendGrid with your API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function POST(req) {
   try {
-    const { email, priceRange, roomType } = req.body;
+    const { email, priceRange, roomType } = await req.json();
 
-    // Store subscription in database (you would implement this based on your database choice)
-    // For now, we'll just send a confirmation email
+    // Create or update subscription
+    const subscription = await prisma.subscription.upsert({
+      where: { email },
+      update: {
+        priceRange: JSON.stringify(priceRange),
+        roomType,
+        updatedAt: new Date()
+      },
+      create: {
+        email,
+        priceRange: JSON.stringify(priceRange),
+        roomType,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
 
     // Send confirmation email
-    const msg = {
+    await sendEmail({
       to: email,
-      from: process.env.SENDGRID_FROM_EMAIL, // Your verified sender
       subject: 'Hotel Price Alert Subscription Confirmed',
       html: `
         <h2>Thank you for subscribing to price alerts!</h2>
@@ -27,14 +35,18 @@ export default async function handler(req, res) {
           ${roomType ? `<li>Room Type: ${roomType}</li>` : ''}
         </ul>
         <p>Best regards,<br>Best Garden Hotel</p>
-      `,
-    };
+      `
+    });
 
-    await sgMail.send(msg);
-
-    res.status(200).json({ message: 'Subscription successful' });
+    return NextResponse.json({
+      message: 'Subscription successful',
+      subscription
+    });
   } catch (error) {
     console.error('Subscription error:', error);
-    res.status(500).json({ message: 'Error processing subscription' });
+    return NextResponse.json(
+      { error: 'Error processing subscription' },
+      { status: 500 }
+    );
   }
 } 

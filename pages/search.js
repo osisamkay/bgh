@@ -681,9 +681,8 @@ export default function Search() {
                           </div>
                           <Link 
                             href={{
-                              pathname: '/register',
+                              pathname: `/room/${room.id}`,
                               query: {
-                                redirect: `/room/${room.id}`,
                                 checkIn: checkInDate,
                                 checkOut: checkOutDate,
                                 guests: guests

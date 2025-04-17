@@ -88,15 +88,15 @@ export default function RoomSection() {
                 <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300">
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-white font-medium text-shadow">{room.type}</span>
+                      <span className="text-white font-medium text-shadow ">{room.type}</span>
                       <span className="text-white font-bold">${room.price}/night</span>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="mt-4 flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">{room.amenities.slice(0, 2).join(' • ')}</p>
+                <div  >
+                  <p className="text-sm text-gray-600">{room.amenities.slice(0, 1).join(' • ')}</p>
                   <p className="text-sm text-gray-600">Max {room.capacity} {room.capacity === 1 ? 'Guest' : 'Guests'}</p>
                 </div>
                 <Link href={`/room/${room.id}`}>
