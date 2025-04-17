@@ -3,7 +3,6 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
-import roomsData from '../data/rooms.json';
 import Image from 'next/image';
 // import DatePicker from 'react-datepicker';
 // import "react-datepicker/dist/react-datepicker.css";
@@ -29,20 +28,18 @@ const calculateNights = (checkIn, checkOut) => {
 export default function Search() {
   const router = useRouter();
   
-  // Calculate max price from rooms data
-  const maxPrice = Math.max(...roomsData.rooms.map(room => room.price));
-  
   // State for filter and sort options
   const [checkInDate, setCheckInDate] = useState('4/15/2025');
   const [checkOutDate, setCheckOutDate] = useState('04/16/2025');
   const [rooms, setRooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [ratePreference, setRatePreference] = useState('Best Available ***');
-  const [priceRange, setPriceRange] = useState([0, maxPrice]);
+  const [priceRange, setPriceRange] = useState([0, 0]);
   const [selectedRoomTypes, setSelectedRoomTypes] = useState([]);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
   const [sortOption, setSortOption] = useState('Price (Low to High)');
   const [filteredRooms, setFilteredRooms] = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [error, setError] = useState('');
   const [nights, setNights] = useState(1);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -50,20 +47,49 @@ export default function Search() {
   const [email, setEmail] = useState('');
   const [notificationStatus, setNotificationStatus] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Add state for selected room and image gallery
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Fetch rooms from API
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch('/api/rooms');
+        if (!response.ok) {
+          throw new Error('Failed to fetch rooms');
+        }
+        const data = await response.json();
+        setAllRooms(data);
+        setFilteredRooms(data);
+        
+        // Set max price from fetched rooms
+        const maxPrice = Math.max(...data.map(room => room.price));
+        setPriceRange([0, maxPrice]);
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+        setError('Failed to load rooms. Please try again later.');
+        setIsLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // Calculate max price from filtered rooms
+  const maxPrice = Math.max(...filteredRooms.map(room => room.price), 0);
+
   // Separate handlers for min and max price
   const handleMinPriceChange = (e) => {
-    console.log('Min price change:', e.target.value);
     const value = Math.min(Number(e.target.value), priceRange[1] - 1);
     setPriceRange([value, priceRange[1]]);
   };
 
   const handleMaxPriceChange = (e) => {
-    console.log('Max price change:', e.target.value);
     const value = Math.max(Number(e.target.value), priceRange[0] + 1);
     setPriceRange([priceRange[0], value]);
   };
@@ -71,7 +97,6 @@ export default function Search() {
   // Read query parameters when the router is ready
   useEffect(() => {
     if (router.isReady) {
-      // Apply query parameters if they exist
       if (router.query.checkIn) setCheckInDate(router.query.checkIn);
       if (router.query.checkOut) setCheckOutDate(router.query.checkOut);
       if (router.query.rooms) setRooms(parseInt(router.query.rooms));
@@ -88,28 +113,16 @@ export default function Search() {
     }
   }, [checkInDate, checkOutDate]);
 
-  // Handle clicks outside the date picker
+  // Filter rooms by price and other criteria
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
-        setShowDatePicker(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    if (allRooms.length === 0) return;
 
-  // Filter rooms by price
-  useEffect(() => {
-    let results = [...roomsData.rooms];
+    let results = [...allRooms];
 
     // Filter by room types if any selected
     if (selectedRoomTypes.length > 0) {
       results = results.filter(room => {
-        const roomType = room.type.split(' ')[0].toLowerCase();
+        const roomType = room.type.toLowerCase();
         return selectedRoomTypes.includes(roomType);
       });
     }
@@ -128,9 +141,6 @@ export default function Search() {
       room.price >= priceRange[0] && room.price <= priceRange[1]
     );
 
-    // Filter by guest capacity
-    results = results.filter(room => room.capacity >= guests);
-
     // Sort results
     if (sortOption === 'Price (Low to High)') {
       results.sort((a, b) => a.price - b.price);
@@ -139,7 +149,21 @@ export default function Search() {
     }
 
     setFilteredRooms(results);
-  }, [selectedRoomTypes, selectedAmenities, priceRange, guests, sortOption]);
+  }, [selectedRoomTypes, selectedAmenities, priceRange, sortOption, allRooms]);
+
+  // Handle clicks outside the date picker
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowDatePicker(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Toggle room type selection
   const toggleRoomType = (type) => {

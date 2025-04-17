@@ -60,6 +60,29 @@ export default function RoomDetails() {
     router.push('/search');
   };
 
+  const handleBookNow = () => {
+    const { checkIn, checkOut, guests } = router.query;
+    
+    // If dates are in URL, use them, otherwise use current state
+    const checkInDate = checkIn || selectedCheckInDate;
+    const checkOutDate = checkOut || selectedCheckOutDate;
+    const guestCount = guests || selectedGuests;
+
+    if (!checkInDate || !checkOutDate) {
+      addNotification('Please select check-in and check-out dates', 'error');
+      return;
+    }
+
+    router.push({
+      pathname: `/reserve/${room.id}`,
+      query: {
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        guests: guestCount
+      }
+    });
+  };
+
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -314,28 +337,30 @@ export default function RoomDetails() {
         </div>
 
         {/* Booking Buttons */}
-        <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="flex flex-col mt-12 sm:mt-0 text-center sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
           <Link 
-             href={{
-                              pathname: `/reserve/${room.id}`,
-                              query: {
-                                checkIn: checkInDate,
-                                checkOut: checkOutDate,
-                                guests: guests
-                              }
-                            }}
+            href={{
+              pathname: `/reserve/${room.id}`,
+              query: {
+                checkIn: router.query.checkIn || '',
+                checkOut: router.query.checkOut || '',
+                guests: router.query.guests || 1
+              }
+            }}
             className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors inline-block"
           >
-            Reserve Room
+            RESERVE ROOM
           </Link>
         </div>
-        <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className=" flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
           <Link 
             href={`/register?redirect=/reserve/${id}`}
             className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors inline-block"
           >
             BOOK ROOM
           </Link>
+        </div>
         </div>
       </main>
 

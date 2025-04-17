@@ -115,7 +115,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
           email: formData.email,
           phone: formData.phone,
           specialRequests: formData.specialRequests,
-          id: room.id,
+          id: String(room.id),
           agreeToTerms: formData.termsAccepted,
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
@@ -124,8 +124,13 @@ const ReservationForm = ({ room, onReservationComplete }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create reservation');
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || 'Failed to create reservation');
+        } catch (e) {
+          throw new Error('Server error: ' + errorText);
+        }
       }
 
       const data = await response.json();
@@ -174,10 +179,20 @@ const ReservationForm = ({ room, onReservationComplete }) => {
                   type="tel"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // Remove any non-digit characters except +, -, and space
+                    const value = e.target.value.replace(/[^\d+\s-]/g, '');
+                    // Ensure at least 10 digits
+                    const digits = value.replace(/[^\d]/g, '');
+                    if (digits.length <= 10) {
+                      setFormData(prev => ({ ...prev, phone: value }));
+                    }
+                  }}
+                  placeholder="+1 234 567 8900"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">Format: +1 234 567 8900 (at least 10 digits)</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Guests</label>
