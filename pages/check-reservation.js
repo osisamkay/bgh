@@ -5,37 +5,49 @@ import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import { useNotification } from '../contexts/NotificationContext';
 
-const CheckReservation = () => {
+export default function CheckReservation() {
   const router = useRouter();
   const { addNotification } = useNotification();
   const [reservationId, setReservationId] = useState('');
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleCheckReservation = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch(`/api/reservations/${reservationId}`);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to find reservation');
+        throw new Error(data.error || 'Failed to fetch reservation');
       }
 
-      if (!data.room || !data.room.images || !Array.isArray(data.room.images)) {
-        throw new Error('Invalid room data structure');
+      // Handle missing room data gracefully
+      if (!data.room) {
+        data.room = {
+          type: 'Unknown Room Type',
+          price: 0,
+          images: []
+        };
+      }
+
+      // Ensure images is always an array
+      if (!data.room.images || !Array.isArray(data.room.images)) {
+        data.room.images = [];
       }
 
       setReservation(data);
       addNotification('Reservation found successfully!', 'success');
-      router.push(`/reservation/${reservationId}`);
     } catch (err) {
+      setError(err.message);
       addNotification(err.message || 'Reservation not found. Please check your ID and try again.', 'error');
       setReservation(null);
     } finally {
@@ -79,7 +91,22 @@ const CheckReservation = () => {
   };
 
   const handleBook = () => {
-    router.push(`/payment/${reservationId}`);
+    if (!reservation) {
+      addNotification('No reservation found', 'error');
+      return;
+    }
+
+    // Navigate to payment page with reservation details
+    router.push({
+      pathname: `/payment/${reservationId}`,
+      query: {
+        checkIn: new Date(reservation.checkInDate).toISOString(),
+        checkOut: new Date(reservation.checkOutDate).toISOString(),
+        guests: reservation.numberOfGuests,
+        roomType: reservation.room.type,
+        totalPrice: reservation.totalPrice
+      }
+    });
   };
 
   const handleImageNavigation = (direction) => {
@@ -103,15 +130,13 @@ const CheckReservation = () => {
         <meta name="description" content="Check your reservation status" />
       </Head>
 
-      
-
       <main className="container mx-auto px-4 py-8">
-        <div className=" mx-auto">
+        <div className="mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Check Reservation</h1>
 
           {!reservation ? (
             <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleCheckReservation} className="space-y-4">
                 <div>
                   <label htmlFor="reservationId" className="block text-sm font-medium text-gray-700 mb-2">
                     Reservation ID
@@ -137,7 +162,7 @@ const CheckReservation = () => {
               </form>
             </div>
           ) : (
-            <div className="   bg-white rounded-lg shadow-xl overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
               <div className="flex flex-col lg:flex-row">
                 {/* Left Column - Room Images */}
                 <div className="lg:w-1/2">
@@ -145,7 +170,7 @@ const CheckReservation = () => {
                     <div className="relative h-[400px] w-full">
                       <Image
                         src={reservation.room.images[currentImageIndex]}
-                        alt={reservation.roomType}
+                        alt={reservation.room.type}
                         fill
                         style={{ objectFit: 'cover' }}
                         priority
@@ -196,7 +221,7 @@ const CheckReservation = () => {
                         >
                           <Image
                             src={image}
-                            alt={`${reservation.roomType} view ${index + 1}`}
+                            alt={`${reservation.room.type} view ${index + 1}`}
                             fill
                             style={{ objectFit: 'cover' }}
                           />
@@ -207,15 +232,15 @@ const CheckReservation = () => {
 
                   {/* Room Description */}
                   <div className="p-4">
-                    <p className="text-gray-700">{reservation.description}</p>
+                    <p className="text-gray-700">{reservation.room.description || 'No description available'}</p>
                   </div>
 
                   {/* Amenities */}
-                  {reservation.amenities && (
+                  {reservation.room.amenities && (
                     <div className="p-4 border-t border-gray-200">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Room Amenities</h3>
                       <div className="grid grid-cols-2 gap-3">
-                        {reservation.amenities.map((amenity, index) => (
+                        {reservation.room.amenities.map((amenity, index) => (
                           <div key={index} className="flex items-center text-gray-600">
                             <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -233,12 +258,12 @@ const CheckReservation = () => {
                   <div className="border-b border-gray-200 pb-6 mb-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{reservation.roomType}</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">{reservation.room.type}</h2>
                         <p className="text-gray-600 mt-1">
-                          <span className="font-medium">Capacity:</span> {reservation.capacity} {reservation.capacity === 1 ? 'Adult' : 'Adults'}
+                          <span className="font-medium">Capacity:</span> {reservation.numberOfGuests} {reservation.numberOfGuests === 1 ? 'Adult' : 'Adults'}
                         </p>
                       </div>
-                      <span className="text-2xl font-bold text-amber-600">${reservation.price}</span>
+                      <span className="text-2xl font-bold text-amber-600">${reservation.totalPrice}</span>
                     </div>
                     <p className="text-gray-500 mt-2">Reservation ID: {reservation.id}</p>
                   </div>
@@ -249,15 +274,15 @@ const CheckReservation = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-gray-500">Name</p>
-                          <p className="text-gray-900">{reservation.fullName}</p>
+                          <p className="text-gray-900">{reservation.user?.firstName} {reservation.user?.lastName}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Email</p>
-                          <p className="text-gray-900">{reservation.email}</p>
+                          <p className="text-gray-900">{reservation.user?.email}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Phone</p>
-                          <p className="text-gray-900">{reservation.phoneNumber}</p>
+                          <p className="text-gray-900">{reservation.user?.phoneNumber || 'Not provided'}</p>
                         </div>
                       </div>
                     </div>
@@ -266,12 +291,22 @@ const CheckReservation = () => {
                       <h3 className="text-lg font-medium text-gray-900 mb-3">Reservation Timeline</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <p className="text-sm text-gray-500">Created</p>
-                          <p className="text-gray-900">{new Date(reservation.createdAt).toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">Check-in</p>
+                          <p className="text-gray-900">{new Date(reservation.checkInDate).toLocaleDateString()}</p>
                         </div>
                         <div className="flex justify-between">
-                          <p className="text-sm text-gray-500">Expires</p>
-                          <p className="text-red-600 font-medium">{new Date(reservation.expiresAt).toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">Check-out</p>
+                          <p className="text-gray-900">{new Date(reservation.checkOutDate).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex justify-between">
+                          <p className="text-sm text-gray-500">Status</p>
+                          <p className={`font-medium ${
+                            reservation.status === 'CONFIRMED' ? 'text-green-600' :
+                            reservation.status === 'CANCELLED' ? 'text-red-600' :
+                            'text-amber-600'
+                          }`}>
+                            {reservation.status}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -284,24 +319,28 @@ const CheckReservation = () => {
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                      <button
-                        onClick={handleBook}
-                        className="flex-1 bg-[#1a2b3b] text-white py-4 px-8 rounded-md font-medium hover:bg-[#2c3e50] transition-colors flex items-center justify-center"
-                      >
-                        <span>BOOK NOW</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={handleCancelClick}
-                        className="flex-1 bg-red-600 text-white py-4 px-8 rounded-md font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
-                      >
-                        <span>CANCEL RESERVATION</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                      {reservation.status === 'PENDING' && (
+                        <button
+                          onClick={handleBook}
+                          className="flex-1 bg-[#1a2b3b] text-white py-4 px-8 rounded-md font-medium hover:bg-[#2c3e50] transition-colors flex items-center justify-center"
+                        >
+                          <span>BOOK NOW</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </button>
+                      )}
+                      {reservation.status === 'CONFIRMED' && (
+                        <button
+                          onClick={handleCancelClick}
+                          className="flex-1 bg-red-600 text-white py-4 px-8 rounded-md font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                        >
+                          <span>CANCEL RESERVATION</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -327,7 +366,7 @@ const CheckReservation = () => {
               
               <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
                 <h4 className="font-medium text-amber-800 mb-2">Reservation Details</h4>
-                <p className="text-amber-700">Room: {reservation?.roomType}</p>
+                <p className="text-amber-700">Room: {reservation?.room?.type}</p>
                 <p className="text-amber-700">ID: {reservation?.id}</p>
               </div>
 
@@ -363,10 +402,6 @@ const CheckReservation = () => {
           </div>
         </div>
       )}
-
-     
     </div>
   );
-};
-
-export default CheckReservation; 
+} 

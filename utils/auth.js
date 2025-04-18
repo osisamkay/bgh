@@ -2,6 +2,7 @@ import userData from '../data/users.json';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
 // In a real application, you would use a secure way to store users
 // This is just for demonstration purposes
@@ -243,4 +244,30 @@ export async function comparePasswords(password, hashedPassword) {
 export function generateToken(userId) {
   const token = crypto.randomBytes(32).toString('hex');
   return token;
+}
+
+export async function verifyToken(token) {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true
+      }
+    });
+
+    return user;
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return null;
+  }
 }
