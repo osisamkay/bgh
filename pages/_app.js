@@ -1,4 +1,4 @@
-import React from 'react';
+import { Providers } from '../contexts/Providers';
 import '../styles/globals.css';
 import Layout from '../components/Layout';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -12,7 +12,7 @@ export default function MyApp({ Component, pageProps }) {
   const shouldUseLayout = !noLayoutPages.includes(Component.pathname);
 
   return (
-    <React.StrictMode>
+    <Providers session={pageProps.session}>
       <LanguageProvider>
         <NotificationProvider>
           <AuthProvider>
@@ -26,6 +26,6 @@ export default function MyApp({ Component, pageProps }) {
           </AuthProvider>
         </NotificationProvider>
       </LanguageProvider>
-    </React.StrictMode>
+    </Providers>
   );
 }

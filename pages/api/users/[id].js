@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { getSession } from 'next-auth/react';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -33,22 +34,31 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Prepare update data
+    const updateData = {
+      firstName,
+      lastName,
+      email,
+      streetAddress,
+      city,
+      postalCode,
+      province,
+      country,
+      termsAccepted,
+      role: 'USER' // Update role from GUEST to USER
+    };
+
+    // Only update password if it's provided and different from the current one
+    if (password) {
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+
     // Update the user
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        firstName,
-        lastName,
-        email,
-        password, // Note: In production, you should hash the password before storing
-        streetAddress,
-        city,
-        postalCode,
-        province,
-        country,
-        termsAccepted,
-        role: 'USER' // Update role from GUEST to USER
-      }
+      data: updateData
     });
 
     // Remove sensitive data before sending response
