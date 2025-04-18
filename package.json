@@ -5,7 +5,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "reset-db": "taskkill /F /IM node.exe && del prisma\\dev.db && npx prisma migrate reset --force"
   },
   "keywords": [],
   "author": "",
