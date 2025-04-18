@@ -1,106 +1,86 @@
 import nodemailer from 'nodemailer';
 
-// Create reusable transporter
-const createTransporter = () => {
-  // For production
-  if (process.env.NODE_ENV === 'production') {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+let testAccount = null;
+
+async function getTestAccount() {
+  if (!testAccount) {
+    testAccount = await nodemailer.createTestAccount();
+    console.log('Created Ethereal test account:', {
+      user: testAccount.user,
+      pass: testAccount.pass,
+      web: 'https://ethereal.email'
     });
   }
-  
-  // For development/testing
+  return testAccount;
+}
+
+async function createTransporter() {
+  // Always use Ethereal for both development and production
+  const testAccount = await getTestAccount();
   return nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
     secure: false,
     auth: {
-      user: process.env.TEST_EMAIL_USER || 'test@ethereal.email',
-      pass: process.env.TEST_EMAIL_PASS || 'testpass'
-    }
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
   });
-};
+}
 
-const transporter = createTransporter();
+export async function sendReservationEmail(reservation) {
+  const transporter = await createTransporter();
 
-export const sendReservationEmail = async (reservation) => {
-  try {
-    // Format the expiration time
-    const expirationTime = new Date(reservation.expiresAt).toLocaleTimeString();
-    
-    // Create email content
-    const mailOptions = {
-      from: `"Best Garden Hotel" <${process.env.SMTP_FROM}>`,
-      to: reservation.email,
-      subject: 'Your Reservation at Best Garden Hotel',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #1a2b3b;">Reservation Confirmation</h1>
-          
-          <p>Dear ${reservation.fullName},</p>
-          
-          <p>Thank you for choosing Best Garden Hotel. Your reservation details are below:</p>
-          
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h2 style="color: #1a2b3b; margin-top: 0;">Reservation Details</h2>
-            <p><strong>Room Type:</strong> ${reservation.roomType}</p>
-            <p><strong>Price:</strong> $${reservation.price} per night</p>
-            <p><strong>Reservation ID:</strong> ${reservation.id}</p>
-            <p style="color: #dc3545;"><strong>Important:</strong> This reservation will expire at ${expirationTime} if not confirmed.</p>
-          </div>
-          
-          <div style="background-color: #e9ecef; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="color: #1a2b3b; margin-top: 0;">Check-in Information</h3>
-            <p>Check-in time: 4:00 PM</p>
-            <p>Check-out time: 11:00 AM</p>
-            <p>Please bring a valid ID and the credit card used for booking.</p>
-          </div>
+  const formattedCheckIn = new Date(reservation.checkInDate).toLocaleDateString();
+  const formattedCheckOut = new Date(reservation.checkOutDate).toLocaleDateString();
 
-          ${reservation.specialRequests ? `
-          <div style="margin: 20px 0;">
-            <h3 style="color: #1a2b3b;">Special Requests</h3>
-            <p>${reservation.specialRequests}</p>
-          </div>
-          ` : ''}
-          
-          <p>If you need to modify or cancel your reservation, please contact us at:</p>
-          <p>Phone: (555) 123-4567</p>
-          <p>Email: support@bestgardenhotel.com</p>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-            <p style="color: #6c757d; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
-          </div>
+  const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Reservation Confirmation</h2>
+      <p>Dear ${reservation.user.name},</p>
+      <p>Your reservation has been confirmed. Here are the details:</p>
+      
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">Booking Details</h3>
+        <p><strong>Room:</strong> ${reservation.room.type}</p>
+        <p><strong>Check-in:</strong> ${formattedCheckIn}</p>
+        <p><strong>Check-out:</strong> ${formattedCheckOut}</p>
+        <p><strong>Guests:</strong> ${reservation.numberOfGuests}</p>
+        <p><strong>Total Price:</strong> $${reservation.totalPrice.toFixed(2)}</p>
+      </div>
+
+      ${reservation.specialRequests ? `
+        <div style="margin: 20px 0;">
+          <h3>Special Requests</h3>
+          <p>${reservation.specialRequests}</p>
         </div>
-      `
-    };
+      ` : ''}
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
-    
-    // For development, log the test email URL
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Preview URL: ' + nodemailer.getTestMessageUrl(info));
-    }
+      <div style="margin-top: 30px;">
+        <p>If you have any questions or need to modify your reservation, please contact us.</p>
+        <p>Thank you for choosing our hotel!</p>
+      </div>
+    </div>
+  `;
 
-    return {
-      success: true,
-      messageId: info.messageId,
-      previewUrl: process.env.NODE_ENV !== 'production' ? nodemailer.getTestMessageUrl(info) : null
-    };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
+  const mailOptions = {
+    from: '"Hotel Booking" <booking@hotel.com>',
+    to: reservation.user.email,
+    subject: 'Your Reservation Confirmation',
+    html: emailContent,
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+
+  // Always return preview URL since we're always using Ethereal
+  return {
+    success: true,
+    previewUrl: nodemailer.getTestMessageUrl(info),
+    messageId: info.messageId,
+    etherealUser: testAccount.user,
+    etherealPass: testAccount.pass
+  };
+}
 
 export async function sendCancellationEmail({ 
   email, 
@@ -111,11 +91,12 @@ export async function sendCancellationEmail({
   reason,
   guestName 
 }) {
+  const transporter = await createTransporter();
   const checkInDate = new Date(checkIn).toLocaleDateString();
   const checkOutDate = new Date(checkOut).toLocaleDateString();
 
   const mailOptions = {
-    from: `"Best Garden Hotel" <${process.env.SMTP_FROM}>`,
+    from: '"Hotel Booking" <booking@hotel.com>',
     to: email,
     subject: `Reservation Cancellation Confirmation - ${reservationId}`,
     html: `
@@ -138,7 +119,7 @@ export async function sendCancellationEmail({
         <p>If you did not request this cancellation or have any questions, please contact our support team immediately.</p>
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-          <p style="color: #666;">Best regards,<br>BGH Hotel Team</p>
+          <p style="color: #666;">Best regards,<br>Hotel Team</p>
         </div>
       </div>
     `
@@ -146,12 +127,12 @@ export async function sendCancellationEmail({
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: process.env.NODE_ENV === 'development' ? 
-        nodemailer.getTestMessageUrl(info) : null
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
     };
   } catch (error) {
     console.error('Failed to send cancellation email:', error);
@@ -162,10 +143,12 @@ export async function sendCancellationEmail({
   }
 }
 
-export const sendWelcomeEmail = async (user) => {
+export async function sendWelcomeEmail(user) {
+  const transporter = await createTransporter();
+
   try {
     const mailOptions = {
-      from: `"Best Garden Hotel" <${process.env.SMTP_FROM}>`,
+      from: '"Hotel Booking" <welcome@hotel.com>',
       to: user.email,
       subject: 'Welcome to Best Garden Hotel!',
       html: `
@@ -181,7 +164,7 @@ export const sendWelcomeEmail = async (user) => {
             <li>Save your preferences for future bookings</li>
           </ul>
           <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-          <p>Best regards,<br>The BGH Team</p>
+          <p>Best regards,<br>The Hotel Team</p>
         </div>
       `
     };
@@ -190,7 +173,9 @@ export const sendWelcomeEmail = async (user) => {
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: process.env.NODE_ENV !== 'production' ? nodemailer.getTestMessageUrl(info) : null
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
     };
   } catch (error) {
     console.error('Error sending welcome email:', error);
@@ -199,13 +184,14 @@ export const sendWelcomeEmail = async (user) => {
       error: error.message
     };
   }
-};
+}
 
 export async function sendVerificationEmail(email, token) {
+  const transporter = await createTransporter();
   const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/verify-email?token=${token}`;
   
   const mailOptions = {
-    from: process.env.SMTP_FROM,
+    from: '"Hotel Booking" <verify@hotel.com>',
     to: email,
     subject: 'Verify your email address',
     html: `
@@ -229,10 +215,20 @@ export async function sendVerificationEmail(email, token) {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
     console.log('Verification email sent successfully');
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
   } catch (error) {
     console.error('Error sending verification email:', error);
-    throw new Error('Failed to send verification email');
+    return {
+      success: false,
+      error: error.message
+    };
   }
 } 

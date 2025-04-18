@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
+import EmailPreview from '../notifications/EmailPreview';
 
 const BookingDetails = ({ roomDetails }) => {
   const router = useRouter();
-  const { showNotification } = useNotification();
+  const { addNotification } = useNotification();
+  const { user } = useAuth();
   const { data: session } = useSession();
   const [bookingInfo, setBookingInfo] = useState({
     checkInDate: '',
@@ -13,7 +16,8 @@ const BookingDetails = ({ roomDetails }) => {
     numberOfGuests: 1,
     specialRequests: '',
   });
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailPreviewUrl, setEmailPreviewUrl] = useState(null);
   const [discounts, setDiscounts] = useState({
     senior: 0,
     group: 0,
@@ -59,13 +63,82 @@ const BookingDetails = ({ roomDetails }) => {
     }));
   };
 
-  const handleConfirm = () => {
-    setIsConfirmed(true);
-    showNotification('Booking confirmed! Proceeding to payment...', 'success');
-    // Redirect to payment page after a short delay
-    setTimeout(() => {
-      router.push('/payment');
-    }, 1500);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!bookingInfo.checkInDate || !bookingInfo.checkOutDate) {
+      addNotification('Please provide check-in and check-out dates', 'error');
+      return;
+    }
+    
+    // Validate dates
+    const checkIn = new Date(bookingInfo.checkInDate);
+    const checkOut = new Date(bookingInfo.checkOutDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (checkIn < today) {
+      addNotification('Check-in date cannot be in the past', 'error');
+      return;
+    }
+    
+    if (checkOut <= checkIn) {
+      addNotification('Check-out date must be after check-in date', 'error');
+      return;
+    }
+    
+    // Make sure we have user contact information
+    if (!user || !user.email) {
+      addNotification('Please login or provide contact information to continue', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setEmailPreviewUrl(null);
+    
+    try {
+      const response = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          id: roomDetails.id,
+          checkInDate: bookingInfo.checkInDate,
+          checkOutDate: bookingInfo.checkOutDate,
+          numberOfGuests: bookingInfo.numberOfGuests,
+          specialRequests: bookingInfo.specialRequests,
+          termsAccepted: true,
+          fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Guest User',
+          email: user ? user.email : '',
+          phone: user ? user.phone || '1234567890' : '1234567890'  // Provide default phone if missing
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        addNotification(data.message || 'Booking confirmed successfully!', 'success');
+        
+        // Set email preview URL if available
+        if (data.emailPreviewUrl) {
+          setEmailPreviewUrl(data.emailPreviewUrl);
+        }
+        
+        // Redirect to reservation confirmation page after a short delay
+        setTimeout(() => {
+          router.push(`/reservation-confirmation?id=${data.reservation.id}`);
+        }, 1000);
+      } else {
+        addNotification(data.details || data.error || 'Failed to create reservation', 'error');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      addNotification('An unexpected error occurred during booking. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalPrice = roomDetails.price - discounts.total;
@@ -171,16 +244,23 @@ const BookingDetails = ({ roomDetails }) => {
 
         <div className="mt-6">
           <button
-            onClick={handleConfirm}
-            disabled={isConfirmed || !bookingInfo.checkInDate || !bookingInfo.checkOutDate}
+            onClick={handleSubmit}
+            disabled={isSubmitting || !bookingInfo.checkInDate || !bookingInfo.checkOutDate}
             className={`w-full bg-amber-500 text-white px-4 py-2 rounded-md ${
-              isConfirmed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-600'
+              isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-600'
             }`}
           >
-            {isConfirmed ? 'Processing...' : 'Confirm Booking'}
+            {isSubmitting ? 'Processing...' : 'Confirm Booking'}
           </button>
         </div>
       </div>
+
+      {emailPreviewUrl && (
+        <EmailPreview
+          previewUrl={emailPreviewUrl}
+          onClose={() => setEmailPreviewUrl(null)}
+        />
+      )}
     </div>
   );
 };

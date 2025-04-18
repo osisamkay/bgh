@@ -149,9 +149,11 @@ export default async function handler(req, res) {
         }
       });
 
-      // Send confirmation email
+      // Send confirmation email and get preview URL
+      let emailPreviewUrl = null;
       try {
-        await sendReservationEmail(reservation);
+        const emailResult = await sendReservationEmail(reservation);
+        emailPreviewUrl = emailResult.previewUrl;
       } catch (error) {
         console.error('Failed to send confirmation email:', error);
         // Don't fail the reservation if email fails
@@ -160,7 +162,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         message: 'Reservation created successfully',
         details: 'Your reservation has been confirmed.',
-        reservation
+        reservation,
+        emailPreviewUrl
       });
     } catch (error) {
       console.error('Reservation error:', error);
@@ -173,6 +176,6 @@ export default async function handler(req, res) {
 
   return res.status(405).json({ 
     error: 'Method not allowed',
-    details: 'Only POST requests are allowed'
+    details: 'Only GET and POST requests are allowed'
   });
 } 
