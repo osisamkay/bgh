@@ -4,6 +4,7 @@ import Link from 'next/link';
 const ReservationSuccess = ({ reservation }) => {
   const expiresAt = new Date(reservation.expiresAt);
   const timeLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60)); // minutes left
+  console.log(timeLeft)
 
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6">
@@ -25,13 +26,13 @@ const ReservationSuccess = ({ reservation }) => {
           Great news! Your room is reserved
         </h2>
         <p className="mt-2 text-gray-600">
-          Your reservation is valid for {timeLeft} minutes. Book now to secure this price.
+          Your reservation is valid for 1 hour. Book now to secure this price.
         </p>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
         <h3 className="font-semibold mb-2">Reservation Details</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600">Room</p>
             <p className="font-medium">{reservation.roomId}</p>
@@ -51,16 +52,16 @@ const ReservationSuccess = ({ reservation }) => {
         </div>
       </div>
 
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col md:flex-row justify-between items-center space-y-4">
         <Link
           href={`/register?reservationId=${reservation.id}`}
-          className="btn btn-primary w-full"
+          className="btn btn-primary w-full md:w-1/3 text-center"
         >
           Book Room Now
         </Link>
         <button
           onClick={() => window.print()}
-          className="btn btn-secondary w-full"
+          className="btn btn-secondary w-full md:w-1/3 text-center"
         >
           Print Reservation
         </button>

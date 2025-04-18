@@ -11,29 +11,30 @@ datasource db {
 }
 
 model User {
-    id               String            @id @default(cuid())
-    name             String
-    email            String            @unique
-    password         String
-    role             String
-    firstName        String
-    lastName         String
-    streetAddress    String
-    city             String
-    postalCode       String
-    province         String
-    country          String
-    termsAccepted    Boolean
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
-    bookings         Booking[]
-    payments         Payment[]
-    refunds          Refund[]
-    employeeLogs     EmployeeLog[]
-    reportFilters    ReportFilter[]
-    reportLogs       ReportLog[]
-    scheduledReports ScheduledReport[]
-    notifications    Notification[]
+    id                 String              @id @default(cuid())
+    name               String
+    email              String              @unique
+    password           String
+    role               String
+    firstName          String
+    lastName           String
+    streetAddress      String
+    city               String
+    postalCode         String
+    province           String
+    country            String
+    termsAccepted      Boolean
+    createdAt          DateTime            @default(now())
+    updatedAt          DateTime            @updatedAt
+    bookings           Booking[]
+    payments           Payment[]
+    refunds            Refund[]
+    employeeLogs       EmployeeLog[]
+    reportFilters      ReportFilter[]
+    reportLogs         ReportLog[]
+    scheduledReports   ScheduledReport[]
+    notifications      Notification[]
+    verificationTokens VerificationToken[]
 }
 
 model Notification {
@@ -218,6 +219,17 @@ model ScheduledReport {
     user           User      @relation(fields: [userId], references: [id])
     createdAt      DateTime  @default(now())
     updatedAt      DateTime  @updatedAt
+
+    @@index([userId])
+}
+
+model VerificationToken {
+    id        String   @id @default(cuid())
+    token     String   @unique
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    expiresAt DateTime
+    createdAt DateTime @default(now())
 
     @@index([userId])
 }
