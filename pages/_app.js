@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { AuthProvider } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
+import 'react-notifications/lib/notifications.css';
 
 export default function MyApp({ Component, pageProps }) {
   // List of paths that don't need the layout

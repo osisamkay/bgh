@@ -85,30 +85,46 @@ const ReservationForm = ({ room, onReservationComplete }) => {
 
   const validateForm = () => {
     const errors = [];
-    if (!formData.fullName) errors.push('Full name is required');
-    if (!formData.email) errors.push('Email is required');
-    if (!formData.phone) errors.push('Phone number is required');
-    if (!formData.checkInDate) errors.push('Check-in date is required');
-    if (!formData.checkOutDate) errors.push('Check-out date is required');
-    if (!formData.termsAccepted) errors.push('You must accept the terms and conditions');
-    return errors;
+    
+    if (!formData.fullName) errors.push('Full Name');
+    if (!formData.email) errors.push('Email');
+    if (!formData.phone) errors.push('Phone Number');
+    if (!formData.termsAccepted) errors.push('Terms and Conditions');
+
+    if (errors.length > 0) {
+      addNotification(`Please fill in: ${errors.join(', ')}`, 'error');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      addNotification('Please enter a valid email address', 'error');
+      return false;
+    }
+
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      addNotification('Please enter a valid phone number with at least 10 digits', 'error');
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errors = validateForm();
     
-    if (errors.length > 0) {
-      addNotification(errors.join(', '), 'error');
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
+
     try {
       const response = await fetch('/api/reservations', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           fullName: formData.fullName,
@@ -116,29 +132,24 @@ const ReservationForm = ({ room, onReservationComplete }) => {
           phone: formData.phone,
           specialRequests: formData.specialRequests,
           id: String(room.id),
-          agreeToTerms: formData.termsAccepted,
+          termsAccepted: formData.termsAccepted,
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
           numberOfGuests: formData.numberOfGuests
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorText = await response.text();
-        try {
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || 'Failed to create reservation');
-        } catch (e) {
-          throw new Error('Server error: ' + errorText);
-        }
+        addNotification(data.details || data.error || 'Reservation failed', 'error');
+        return;
       }
 
-      const data = await response.json();
-      addNotification('Reservation created successfully!', 'success');
+      addNotification(data.details || 'Reservation created successfully!', 'success');
       onReservationComplete(data.reservation);
     } catch (error) {
-      console.error('Reservation error:', error);
-      addNotification(error.message || 'Failed to create reservation', 'error');
+      addNotification('An error occurred while creating your reservation', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -217,11 +228,6 @@ const ReservationForm = ({ room, onReservationComplete }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
                   required
                 />
-                {/* {formData.checkInDate && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatDateForDisplay(formData.checkInDate)}
-                  </p>
-                )} */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
@@ -233,11 +239,6 @@ const ReservationForm = ({ room, onReservationComplete }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
                   required
                 />
-                {/* {formData.checkOutDate && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatDateForDisplay(formData.checkOutDate)}
-                  </p>
-                )} */}
               </div>
             </div>
             <div className="mb-4">

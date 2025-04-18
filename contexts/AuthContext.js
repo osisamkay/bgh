@@ -5,7 +5,11 @@ import { useNotification } from './NotificationContext';
 const AuthContext = createContext({});
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
 
 export function AuthProvider({ children }) {
@@ -61,25 +65,35 @@ export function AuthProvider({ children }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          termsAccepted: true
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
+        addNotification(data.details || data.error || 'Signup failed', 'error');
+        return {
+          success: false,
+          message: data.details || data.error || 'Signup failed'
+        };
       }
 
-      // Don't set user yet - they need to verify email first
+      addNotification(data.details || 'Registration successful! Please check your email to verify your account.', 'success');
       return {
         success: true,
-        message: data.message
+        message: data.message,
+        details: data.details
       };
     } catch (error) {
       console.error('Signup error:', error);
+      addNotification(error.message || 'An error occurred during signup', 'error');
       return {
         success: false,
-        message: error.message
+        message: error.message,
+        details: error.message
       };
     }
   };
@@ -97,19 +111,23 @@ export function AuthProvider({ children }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        addNotification(data.message || 'Login failed', 'error');
+        return {
+          success: false,
+          message: data.message || 'Login failed'
+        };
       }
 
-      // Store token and user data
       localStorage.setItem('auth_token', data.token);
       setUser(data.user);
-
+      addNotification('Login successful', 'success');
       return {
         success: true,
         message: 'Login successful'
       };
     } catch (error) {
       console.error('Login error:', error);
+      addNotification(error.message || 'An error occurred during login', 'error');
       return {
         success: false,
         message: error.message
@@ -117,28 +135,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      // Clear local storage
-      localStorage.removeItem('auth_token');
-      
-      // Clear user state
-      setUser(null);
-      
-      // Redirect to home page
-      router.push('/');
-
-      return {
-        success: true,
-        message: 'Logout successful'
-      };
-    } catch (error) {
-      console.error('Logout error:', error);
-      return {
-        success: false,
-        message: error.message
-      };
-    }
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    addNotification('Logged out successfully', 'info');
   };
 
   const verifyEmail = async (token) => {

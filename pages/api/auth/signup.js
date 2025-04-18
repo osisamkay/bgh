@@ -1,30 +1,57 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
-import { sendVerificationEmail } from '@/utils/email';
+import { sendVerificationEmail } from '../../../utils/email';
+import crypto from 'crypto';
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const {
       firstName,
       lastName,
       email,
       password,
-      phone,
       streetAddress,
       city,
       postalCode,
       province,
       country,
       termsAccepted
-    } = await req.json();
+    } = req.body;
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !password || !phone || !termsAccepted) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate required fields with specific messages
+    const missingFields = [];
+    if (!firstName) missingFields.push('First Name');
+    if (!lastName) missingFields.push('Last Name');
+    if (!email) missingFields.push('Email');
+    if (!password) missingFields.push('Password');
+    if (!termsAccepted) missingFields.push('Terms and Conditions');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: missingFields.join(', ')
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Invalid email format',
+        details: 'Please enter a valid email address'
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        error: 'Weak password',
+        details: 'Password must be at least 8 characters long'
+      });
     }
 
     // Check if user already exists
@@ -33,10 +60,10 @@ export async function POST(req) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 400 }
-      );
+      return res.status(400).json({ 
+        error: 'Email already registered',
+        details: 'This email address is already in use. Please use a different email or try logging in.'
+      });
     }
 
     // Hash password
@@ -50,15 +77,13 @@ export async function POST(req) {
         password: hashedPassword,
         firstName,
         lastName,
-        phone,
         streetAddress,
         city,
         postalCode,
         province,
         country,
         termsAccepted,
-        role: 'USER',
-        isVerified: false
+        role: 'USER'
       }
     });
 
@@ -77,21 +102,31 @@ export async function POST(req) {
     });
 
     // Send verification email
-    await sendVerificationEmail({
-      to: email,
-      token: verificationToken,
-      name: `${firstName} ${lastName}`
-    });
+    try {
+      await sendVerificationEmail({
+        to: email,
+        token: verificationToken,
+        name: `${firstName} ${lastName}`
+      });
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      return res.status(200).json({
+        message: 'User registered successfully, but verification email could not be sent.',
+        details: 'Please contact support to verify your email address.',
+        userId: user.id
+      });
+    }
 
-    return NextResponse.json({
-      message: 'User registered successfully. Please check your email to verify your account.',
+    return res.status(200).json({
+      message: 'User registered successfully',
+      details: 'Please check your email to verify your account.',
       userId: user.id
     });
   } catch (error) {
     console.error('Signup error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message || 'An unexpected error occurred. Please try again later.'
+    });
   }
 } 

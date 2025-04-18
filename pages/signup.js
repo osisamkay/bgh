@@ -99,13 +99,16 @@ export default function Signup() {
       const result = await signup(formData);
       
       if (result.success) {
-        addNotification('Registration successful! Please check your email to verify your account.', 'success');
+        addNotification(
+          result.details || 'Registration successful! Please check your email to verify your account.',
+          'success'
+        );
         router.push('/signup-success');
       } else {
-        addNotification(result.message || 'Registration failed', 'error');
+        addNotification(result.details || result.message || 'Registration failed', 'error');
       }
     } catch (error) {
-      addNotification('An error occurred during registration', 'error');
+      addNotification(error.message || 'An error occurred during registration', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +121,7 @@ export default function Signup() {
         <meta name="description" content="Join BGH as a member and enjoy exclusive benefits" />
       </Head>
       
-      
+      <Header />
       
       <div className="bg-[#f0f0e0] p-6">
         <div className="container mx-auto">
@@ -144,6 +147,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.firstName && (
+                <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+              )}
             </div>
             
             {/* Last Name */}
@@ -159,6 +165,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.lastName && (
+                <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+              )}
             </div>
             
             {/* Email */}
@@ -174,6 +183,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
             </div>
             
             {/* Confirm Email */}
@@ -189,6 +201,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.confirmEmail && (
+                <p className="text-red-500 text-sm mt-1">{errors.confirmEmail}</p>
+              )}
             </div>
             
             {/* Password */}
@@ -207,6 +222,9 @@ export default function Signup() {
               <p className="text-sm mt-1">
                 Create a password with at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character.
               </p>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
             </div>
             
             {/* Confirm Password */}
@@ -222,6 +240,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+              )}
             </div>
             
             {/* Street Address */}
@@ -237,6 +258,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.streetAddress && (
+                <p className="text-red-500 text-sm mt-1">{errors.streetAddress}</p>
+              )}
             </div>
             
             {/* City */}
@@ -252,6 +276,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.city && (
+                <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+              )}
             </div>
             
             {/* Province/State */}
@@ -267,6 +294,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.province && (
+                <p className="text-red-500 text-sm mt-1">{errors.province}</p>
+              )}
             </div>
             
             {/* Postal Code */}
@@ -282,6 +312,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.postalCode && (
+                <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>
+              )}
             </div>
             
             {/* Country */}
@@ -297,6 +330,9 @@ export default function Signup() {
                 onChange={handleChange}
                 required
               />
+              {errors.country && (
+                <p className="text-red-500 text-sm mt-1">{errors.country}</p>
+              )}
             </div>
           </div>
           
@@ -329,7 +365,7 @@ export default function Signup() {
               disabled={isLoading}
               className="w-full bg-[#1a2b3b] text-white py-3 rounded font-medium hover:bg-[#2c3e50] disabled:opacity-50"
             >
-              SUBMIT
+              {isLoading ? 'Creating Account...' : 'SUBMIT'}
             </button>
           </div>
         </form>

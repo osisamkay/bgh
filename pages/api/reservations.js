@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { sendReservationEmail } from '../../utils/emailService';
+import { useNotification } from '../../contexts/NotificationContext';
 
 export const config = {
   api: {
@@ -45,38 +46,58 @@ export default async function handler(req, res) {
         phone,
         specialRequests,
         id,
-        agreeToTerms,
+        termsAccepted,
         checkInDate,
         checkOutDate,
         numberOfGuests
       } = req.body;
 
-      // Validate required fields
-      if (!fullName || !email || !phone || !id || !agreeToTerms || !checkInDate || !checkOutDate || !numberOfGuests) {
-        return res.status(400).json({ error: 'Missing required fields' });
+      // Validate required fields with specific messages
+      const missingFields = [];
+      if (!fullName) missingFields.push('Full Name');
+      if (!email) missingFields.push('Email');
+      if (!phone) missingFields.push('Phone Number');
+      if (!id) missingFields.push('Room ID');
+      if (!termsAccepted) missingFields.push('Terms and Conditions');
+      if (!checkInDate) missingFields.push('Check-in Date');
+      if (!checkOutDate) missingFields.push('Check-out Date');
+      if (!numberOfGuests) missingFields.push('Number of Guests');
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          error: 'Missing required fields',
+          details: `Please provide: ${missingFields.join(', ')}`
+        });
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
+        return res.status(400).json({ 
+          error: 'Invalid email format',
+          details: 'Please enter a valid email address'
+        });
       }
 
       // Validate phone number format
       const phoneRegex = /^\+?[\d\s-]{10,}$/;
       if (!phoneRegex.test(phone)) {
-        return res.status(400).json({ error: 'Invalid phone number format' });
+        return res.status(400).json({ 
+          error: 'Invalid phone number format',
+          details: 'Please enter a valid phone number with at least 10 digits'
+        });
       }
 
       // Find room
       const room = await prisma.room.findUnique({
-        where: { 
-          id: String(id) // Ensure ID is treated as string
-        }
+        where: { id: String(id) }
       });
 
       if (!room) {
-        return res.status(404).json({ error: 'Room not found' });
+        return res.status(404).json({ 
+          error: 'Room not found',
+          details: 'The selected room is no longer available'
+        });
       }
 
       // Check if user exists with this email
@@ -90,7 +111,7 @@ export default async function handler(req, res) {
           data: {
             name: fullName,
             email: email.toLowerCase(),
-            password: 'temporary', // Will be updated when user sets their password
+            password: 'temporary',
             streetAddress: '',
             city: '',
             postalCode: '',
@@ -138,13 +159,20 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         message: 'Reservation created successfully',
+        details: 'Your reservation has been confirmed.',
         reservation
       });
     } catch (error) {
       console.error('Reservation error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ 
+        error: 'Internal server error',
+        details: 'An unexpected error occurred. Please try again later.'
+      });
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return res.status(405).json({ 
+    error: 'Method not allowed',
+    details: 'Only POST requests are allowed'
+  });
 } 

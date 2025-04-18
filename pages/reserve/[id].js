@@ -27,7 +27,7 @@ export default function ReservationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { addNotification, showNotification } = useNotification();
+  const { addNotification } = useNotification();
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -125,7 +125,7 @@ export default function ReservationPage() {
 
       const data = await response.json();
       setReservation(data);
-      showNotification('Reservation created successfully!', 'success');
+      addNotification('Reservation created successfully!', 'success');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -207,7 +207,7 @@ export default function ReservationPage() {
                   error={error}
                   onReservationComplete={(reservationData) => {
                     setReservation(reservationData);
-                    showNotification('Reservation created successfully!', 'success');
+                    addNotification('Reservation created successfully!', 'success');
                   }}
                 />
               )}
