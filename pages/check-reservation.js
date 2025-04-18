@@ -4,10 +4,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CheckReservation() {
   const router = useRouter();
   const { addNotification } = useNotification();
+  const { user } = useAuth();
   const [reservationId, setReservationId] = useState('');
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -96,7 +98,28 @@ export default function CheckReservation() {
       return;
     }
 
-    // Navigate to payment page with reservation details
+    // If user is not logged in, redirect to register page with prefilled data
+    if (!user) {
+      const reservationData = {
+        checkIn: new Date(reservation.checkInDate).toISOString(),
+        checkOut: new Date(reservation.checkOutDate).toISOString(),
+        guests: reservation.numberOfGuests,
+        roomType: reservation.room.type,
+        totalPrice: reservation.totalPrice,
+        reservationId: reservationId
+      };
+
+      router.push({
+        pathname: '/register',
+        query: {
+          returnUrl: encodeURIComponent(`/payment/${reservationId}`),
+          prefilledData: encodeURIComponent(JSON.stringify(reservationData))
+        }
+      });
+      return;
+    }
+
+    // If user is logged in, proceed to payment
     router.push({
       pathname: `/payment/${reservationId}`,
       query: {
