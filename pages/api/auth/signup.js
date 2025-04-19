@@ -102,12 +102,22 @@ export default async function handler(req, res) {
     });
 
     // Send verification email
+    let emailResult = null;
     try {
-      await sendVerificationEmail({
+      emailResult = await sendVerificationEmail({
         to: email,
         token: verificationToken,
         name: `${firstName} ${lastName}`
       });
+
+      if (!emailResult.success) {
+        console.error('Failed to send verification email:', emailResult.error);
+        return res.status(200).json({
+          message: 'User registered successfully, but verification email could not be sent.',
+          details: 'Please contact support to verify your email address.',
+          userId: user.id
+        });
+      }
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       return res.status(200).json({
@@ -118,9 +128,16 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
+      success: true,
       message: 'User registered successfully',
       details: 'Please check your email to verify your account.',
-      userId: user.id
+      userId: user.id,
+      emailDetails: emailResult ? {
+        previewUrl: emailResult.previewUrl,
+        messageId: emailResult.messageId,
+        etherealUser: emailResult.etherealUser,
+        etherealPass: emailResult.etherealPass
+      } : null
     });
   } catch (error) {
     console.error('Signup error:', error);

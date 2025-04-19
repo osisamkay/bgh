@@ -91,14 +91,14 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const {
-          roomType,
-          checkInDate,
-          checkOutDate,
-          numberOfGuests,
-          staffId
-        } = req.body;
+        const { roomType, checkInDate, checkOutDate, numberOfGuests, staffId } = req.body;
 
+        // Validate input
+        if (!roomType || !checkInDate || !checkOutDate || !numberOfGuests || !staffId) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Find existing reservation
         const existingReservation = await prisma.booking.findUnique({
           where: { id },
           include: {
@@ -111,37 +111,18 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'Reservation not found' });
         }
 
-        if (existingReservation.status === 'CHECKED_IN' || existingReservation.status === 'CHECKED_OUT') {
-          return res.status(400).json({ error: 'Cannot modify completed reservation' });
-        }
-
-        // Find available rooms for the new dates
-        const availableRooms = await prisma.room.findMany({
-          where: {
-            type: roomType,
-            status: 'AVAILABLE',
-            bookings: {
-              none: {
-                OR: [
-                  {
-                    checkInDate: { lte: new Date(checkOutDate) },
-                    checkOutDate: { gte: new Date(checkInDate) },
-                    status: { not: 'CANCELLED' },
-                    id: { not: id }
-                  }
-                ]
-              }
-            }
-          },
-          take: 1
+        // Find new room
+        const newRoom = await prisma.room.findFirst({
+          where: { type: roomType, status: 'AVAILABLE' }
         });
 
-        if (availableRooms.length === 0) {
-          return res.status(400).json({ error: 'No rooms available for the selected dates' });
+        if (!newRoom) {
+          return res.status(400).json({ error: 'Selected room type not available' });
         }
 
-        const newRoom = availableRooms[0];
-        const newPrice = newRoom.price * Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
+        // Calculate new price
+        const nights = Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
+        const newPrice = newRoom.price * nights;
 
         // Update reservation
         const updatedReservation = await prisma.booking.update({
@@ -161,21 +142,30 @@ export default async function handler(req, res) {
         });
 
         // Send update email
-        await sendEmail({
+        const updateEmailResult = await sendEmail({
           to: existingReservation.user.email,
           subject: 'Reservation Updated',
           html: `
-            <h2>Reservation Update</h2>
-            <p>Dear ${existingReservation.user.firstName},</p>
-            <p>Your reservation has been updated.</p>
-            <h3>Updated Details:</h3>
-            <ul>
-              <li>Room Type: ${roomType}</li>
-              <li>Check-in Date: ${new Date(checkInDate).toLocaleDateString()}</li>
-              <li>Check-out Date: ${new Date(checkOutDate).toLocaleDateString()}</li>
-              <li>Number of Guests: ${numberOfGuests}</li>
-              <li>Total Price: $${newPrice}</li>
-            </ul>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1a1a1a;">Reservation Update</h2>
+              <p>Dear ${existingReservation.user.firstName},</p>
+              <p>Your reservation has been updated with the following details:</p>
+              
+              <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                <h3 style="margin-top: 0;">Updated Details:</h3>
+                <p><strong>Room Type:</strong> ${roomType}</p>
+                <p><strong>Check-in Date:</strong> ${new Date(checkInDate).toLocaleDateString()}</p>
+                <p><strong>Check-out Date:</strong> ${new Date(checkOutDate).toLocaleDateString()}</p>
+                <p><strong>Number of Guests:</strong> ${numberOfGuests}</p>
+                <p><strong>Total Price:</strong> $${newPrice}</p>
+              </div>
+              
+              <p>If you have any questions about these changes, please contact our support team.</p>
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #666;">Best regards,<br>Hotel Team</p>
+              </div>
+            </div>
           `
         });
 
@@ -201,7 +191,13 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          reservation: updatedReservation
+          reservation: updatedReservation,
+          emailDetails: {
+            previewUrl: updateEmailResult.previewUrl,
+            messageId: updateEmailResult.messageId,
+            etherealUser: updateEmailResult.etherealUser,
+            etherealPass: updateEmailResult.etherealPass
+          }
         });
 
       case 'DELETE':
@@ -249,14 +245,31 @@ export default async function handler(req, res) {
         });
 
         // Send cancellation email
-        await sendEmail({
+        const cancelEmailResult = await sendEmail({
           to: reservationToDelete.user.email,
           subject: 'Reservation Cancelled',
           html: `
-            <h2>Reservation Cancelled</h2>
-            <p>Dear ${reservationToDelete.user.firstName},</p>
-            <p>Your reservation has been cancelled.</p>
-            <p>If you have made a payment, a refund will be processed according to our cancellation policy.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1a1a1a;">Reservation Cancelled</h2>
+              <p>Dear ${reservationToDelete.user.firstName},</p>
+              <p>Your reservation has been cancelled by our staff.</p>
+              
+              <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                <h3 style="margin-top: 0;">Reservation Details:</h3>
+                <p><strong>Reservation ID:</strong> ${reservationToDelete.id}</p>
+                <p><strong>Room:</strong> ${reservationToDelete.room.name}</p>
+                <p><strong>Check-in:</strong> ${new Date(reservationToDelete.checkInDate).toLocaleDateString()}</p>
+                <p><strong>Check-out:</strong> ${new Date(reservationToDelete.checkOutDate).toLocaleDateString()}</p>
+                <p><strong>Cancellation Time:</strong> ${new Date().toLocaleString()}</p>
+              </div>
+              
+              <p>If you have made a payment, a refund will be processed according to our cancellation policy.</p>
+              <p>If you have any questions, please contact our support team.</p>
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #666;">Best regards,<br>Hotel Team</p>
+              </div>
+            </div>
           `
         });
 
@@ -276,7 +289,13 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          message: 'Reservation cancelled successfully'
+          message: 'Reservation cancelled successfully',
+          emailDetails: {
+            previewUrl: cancelEmailResult.previewUrl,
+            messageId: cancelEmailResult.messageId,
+            etherealUser: cancelEmailResult.etherealUser,
+            etherealPass: cancelEmailResult.etherealPass
+          }
         });
 
       default:

@@ -14,6 +14,8 @@ model User {
     id                 String              @id @default(cuid())
     name               String
     email              String              @unique
+    emailVerified      Boolean             @default(false)
+    emailVerifiedAt    DateTime?
     password           String
     role               String
     firstName          String
@@ -35,6 +37,12 @@ model User {
     scheduledReports   ScheduledReport[]
     notifications      Notification[]
     verificationTokens VerificationToken[]
+    phone              String?
+    address            String?
+    state              String?
+    zipCode            String?
+
+    @@index([email])
 }
 
 model Notification {

@@ -1,43 +1,174 @@
-import Mailjet from 'node-mailjet';
+import nodemailer from 'nodemailer';
+import {
+  getVerificationEmailTemplate,
+  getWelcomeEmailTemplate,
+  getReservationConfirmationTemplate,
+  getPasswordResetTemplate
+} from './emailTemplates';
 
-const mailjet = new Mailjet({
-  apiKey: process.env.MAILJET_API_KEY,
-  apiSecret: process.env.MAILJET_API_SECRET
-});
+let testAccount = null;
 
-export const sendVerificationEmail = async ({ to, token, name }) => {
+// Create Ethereal test account if it doesn't exist
+const getTestAccount = async () => {
+  if (testAccount) {
+    return testAccount;
+  }
+
+  testAccount = await nodemailer.createTestAccount();
+  console.log('Ethereal Email Account:', {
+    user: testAccount.user,
+    pass: testAccount.pass
+  });
+  return testAccount;
+};
+
+// Create transporter for sending emails
+const createTransporter = async () => {
+  const account = await getTestAccount();
+  return nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
+    auth: {
+      user: account.user,
+      pass: account.pass,
+    },
+  });
+};
+
+// Generic email sending function
+export const sendEmail = async ({ to, subject, html, from = '"Best Garden Hotel" <noreply@bgh-hotel.com>' }) => {
   try {
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+    const transporter = await createTransporter();
     
-    await mailjet.post('send', { version: 'v3.1' }).request({
-      Messages: [
-        {
-          From: {
-            Email: process.env.MAILJET_FROM_EMAIL,
-            Name: 'Best Garden Hotel'
-          },
-          To: [
-            {
-              Email: to,
-              Name: name
-            }
-          ],
-          Subject: 'Verify your email address',
-          HTMLPart: `
-            <h2>Email Verification</h2>
-            <p>Hello ${name},</p>
-            <p>Thank you for registering with Best Garden Hotel. Please click the link below to verify your email address:</p>
-            <p><a href="${verificationUrl}">Verify Email</a></p>
-            <p>This link will expire in 24 hours.</p>
-            <p>If you did not create an account, please ignore this email.</p>
-          `
-        }
-      ]
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject,
+      html
     });
     
-    return true;
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Send verification email using template
+export const sendVerificationEmail = async ({ to, token, name }) => {
+  try {
+    const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/verify-email/${token}`;
+    
+    const result = await sendEmail({
+      to,
+      from: '"BGH Support" <support@bgh-hotel.com>',
+      subject: 'Verify Your Email - Best Garden Hotel',
+      html: getVerificationEmailTemplate({
+        name,
+        verificationUrl
+      })
+    });
+    
+    return result;
   } catch (error) {
     console.error('Error sending verification email:', error);
-    throw new Error('Failed to send verification email');
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Send welcome email using template
+export const sendWelcomeEmail = async ({ to, name }) => {
+  try {
+    const result = await sendEmail({
+      to,
+      from: '"BGH Welcome" <welcome@bgh-hotel.com>',
+      subject: 'Welcome to Best Garden Hotel!',
+      html: getWelcomeEmailTemplate({ name })
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Send reservation confirmation email using template
+export const sendReservationEmail = async ({
+  to,
+  name,
+  roomType,
+  checkIn,
+  checkOut,
+  guests,
+  totalPrice,
+  reservationId,
+  specialRequests
+}) => {
+  try {
+    const result = await sendEmail({
+      to,
+      from: '"BGH Reservations" <reservations@bgh-hotel.com>',
+      subject: 'Your Reservation is Confirmed - Best Garden Hotel',
+      html: getReservationConfirmationTemplate({
+        name,
+        roomType,
+        checkIn,
+        checkOut,
+        guests,
+        totalPrice,
+        reservationId,
+        specialRequests
+      })
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error sending reservation email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Send password reset email using template
+export const sendPasswordResetEmail = async ({ to, token, name }) => {
+  try {
+    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password/${token}`;
+    
+    const result = await sendEmail({
+      to,
+      from: '"BGH Support" <support@bgh-hotel.com>',
+      subject: 'Reset Your Password - Best Garden Hotel',
+      html: getPasswordResetTemplate({
+        name,
+        resetUrl
+      })
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }; 

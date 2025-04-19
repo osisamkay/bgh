@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Header from '../components/Header';
+import EmailPreview from '../components/notifications/EmailPreview';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function Signup() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [emailPreviewUrl, setEmailPreviewUrl] = useState(null);
   
   const router = useRouter();
   const { signup } = useAuth();
@@ -99,11 +101,20 @@ export default function Signup() {
       const result = await signup(formData);
       
       if (result.success) {
+        // Set email preview URL if available
+        if (result.emailDetails?.previewUrl) {
+          setEmailPreviewUrl(result.emailDetails.previewUrl);
+        }
+
         addNotification(
           result.details || 'Registration successful! Please check your email to verify your account.',
           'success'
         );
-        router.push('/signup-success');
+
+        // Delay the redirect to allow the user to see the email preview
+        setTimeout(() => {
+          router.push('/signup-success');
+        }, 5000);
       } else {
         addNotification(result.details || result.message || 'Registration failed', 'error');
       }
@@ -370,6 +381,14 @@ export default function Signup() {
           </div>
         </form>
       </div>
+      
+      {/* Add EmailPreview component */}
+      {emailPreviewUrl && (
+        <EmailPreview
+          previewUrl={emailPreviewUrl}
+          onClose={() => setEmailPreviewUrl(null)}
+        />
+      )}
       
       <div className="bg-[#c8a750] mt-auto py-4 text-center">
         <p>© 2025 BGH. All rights reserved.</p>

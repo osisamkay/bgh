@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
+import EmailPreview from '../components/notifications/EmailPreview';
 
 const Register = () => {
   const router = useRouter();
@@ -28,6 +29,7 @@ const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [returnUrl, setReturnUrl] = useState(null);
+  const [emailPreviewUrl, setEmailPreviewUrl] = useState(null);
 
   useEffect(() => {
     const fetchGuestData = async () => {
@@ -191,8 +193,17 @@ const Register = () => {
         });
 
         if (result.success) {
+          // Set email preview URL if available
+          if (result.emailDetails?.previewUrl) {
+            setEmailPreviewUrl(result.emailDetails.previewUrl);
+            // Delay redirect to allow user to see the email preview
+            setTimeout(() => {
+              router.push('/login');
+            }, 5000);
+          } else {
+            router.push('/login');
+          }
           addNotification('Registration successful! Please check your email to verify your account.', 'success');
-          router.push('/login');
         } else {
           setErrors({ submit: result.message });
           addNotification(result.message, 'error');
@@ -411,6 +422,14 @@ const Register = () => {
           )}
         </div>
       </main>
+
+      {/* Add EmailPreview component */}
+      {emailPreviewUrl && (
+        <EmailPreview
+          previewUrl={emailPreviewUrl}
+          onClose={() => setEmailPreviewUrl(null)}
+        />
+      )}
     </div>
   );
 };

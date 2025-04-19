@@ -1,86 +1,190 @@
 import nodemailer from 'nodemailer';
+import {
+  getVerificationEmailTemplate,
+  getWelcomeEmailTemplate,
+  getReservationConfirmationTemplate,
+  getPasswordResetTemplate
+} from './emailTemplates';
 
 let testAccount = null;
 
-async function getTestAccount() {
-  if (!testAccount) {
-    testAccount = await nodemailer.createTestAccount();
-    console.log('Created Ethereal test account:', {
-      user: testAccount.user,
-      pass: testAccount.pass,
-      web: 'https://ethereal.email'
-    });
+// Create Ethereal test account if it doesn't exist
+const getTestAccount = async () => {
+  if (testAccount) {
+    return testAccount;
   }
-  return testAccount;
-}
 
-async function createTransporter() {
-  // Always use Ethereal for both development and production
-  const testAccount = await getTestAccount();
+  testAccount = await nodemailer.createTestAccount();
+  console.log('Ethereal Email Account:', {
+    user: testAccount.user,
+    pass: testAccount.pass
+  });
+  return testAccount;
+};
+
+// Create transporter for sending emails
+const createTransporter = async () => {
+  const account = await getTestAccount();
+  
   return nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
     secure: false,
     auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
+      user: account.user,
+      pass: account.pass
+    }
   });
-}
+};
 
-export async function sendReservationEmail(reservation) {
-  const transporter = await createTransporter();
+// Format date for email display
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
-  const formattedCheckIn = new Date(reservation.checkInDate).toLocaleDateString();
-  const formattedCheckOut = new Date(reservation.checkOutDate).toLocaleDateString();
+// Send verification email
+export const sendVerificationEmail = async ({ to, token, name }) => {
+  try {
+    const transporter = await createTransporter();
+    const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/verify-email/${token}`;
 
-  const emailContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Reservation Confirmation</h2>
-      <p>Dear ${reservation.user.name},</p>
-      <p>Your reservation has been confirmed. Here are the details:</p>
-      
-      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-        <h3 style="margin-top: 0;">Booking Details</h3>
-        <p><strong>Room:</strong> ${reservation.room.type}</p>
-        <p><strong>Check-in:</strong> ${formattedCheckIn}</p>
-        <p><strong>Check-out:</strong> ${formattedCheckOut}</p>
-        <p><strong>Guests:</strong> ${reservation.numberOfGuests}</p>
-        <p><strong>Total Price:</strong> $${reservation.totalPrice.toFixed(2)}</p>
-      </div>
+    const info = await transporter.sendMail({
+      from: '"BGH Support" <support@bgh-hotel.com>',
+      to,
+      subject: 'Verify Your Email - Best Garden Hotel',
+      html: getVerificationEmailTemplate({
+        name,
+        verificationUrl
+      })
+    });
 
-      ${reservation.specialRequests ? `
-        <div style="margin: 20px 0;">
-          <h3>Special Requests</h3>
-          <p>${reservation.specialRequests}</p>
-        </div>
-      ` : ''}
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
 
-      <div style="margin-top: 30px;">
-        <p>If you have any questions or need to modify your reservation, please contact us.</p>
-        <p>Thank you for choosing our hotel!</p>
-      </div>
-    </div>
-  `;
+// Send welcome email after verification
+export const sendWelcomeEmail = async ({ to, name }) => {
+  try {
+    const transporter = await createTransporter();
 
-  const mailOptions = {
-    from: '"Hotel Booking" <booking@hotel.com>',
-    to: reservation.user.email,
-    subject: 'Your Reservation Confirmation',
-    html: emailContent,
-  };
+    const info = await transporter.sendMail({
+      from: '"BGH Welcome" <welcome@bgh-hotel.com>',
+      to,
+      subject: 'Welcome to Best Garden Hotel!',
+      html: getWelcomeEmailTemplate({ name })
+    });
 
-  const info = await transporter.sendMail(mailOptions);
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
 
-  // Always return preview URL since we're always using Ethereal
-  return {
-    success: true,
-    previewUrl: nodemailer.getTestMessageUrl(info),
-    messageId: info.messageId,
-    etherealUser: testAccount.user,
-    etherealPass: testAccount.pass
-  };
-}
+// Send reservation confirmation email
+export const sendReservationEmail = async ({
+  to,
+  name,
+  roomType,
+  checkIn,
+  checkOut,
+  guests,
+  totalPrice,
+  reservationId,
+  specialRequests
+}) => {
+  try {
+    const transporter = await createTransporter();
+
+    const info = await transporter.sendMail({
+      from: '"BGH Reservations" <reservations@bgh-hotel.com>',
+      to,
+      subject: 'Your Reservation is Confirmed - Best Garden Hotel',
+      html: getReservationConfirmationTemplate({
+        name,
+        roomType,
+        checkIn: formatDate(checkIn),
+        checkOut: formatDate(checkOut),
+        guests,
+        totalPrice: totalPrice.toFixed(2),
+        reservationId,
+        specialRequests
+      })
+    });
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error sending reservation email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Send password reset email
+export const sendPasswordResetEmail = async ({ to, token, name }) => {
+  try {
+    const transporter = await createTransporter();
+    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password/${token}`;
+
+    const info = await transporter.sendMail({
+      from: '"BGH Support" <support@bgh-hotel.com>',
+      to,
+      subject: 'Reset Your Password - Best Garden Hotel',
+      html: getPasswordResetTemplate({
+        name,
+        resetUrl
+      })
+    });
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: nodemailer.getTestMessageUrl(info),
+      etherealUser: testAccount.user,
+      etherealPass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
 
 export async function sendCancellationEmail({ 
   email, 
@@ -136,96 +240,6 @@ export async function sendCancellationEmail({
     };
   } catch (error) {
     console.error('Failed to send cancellation email:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
-
-export async function sendWelcomeEmail(user) {
-  const transporter = await createTransporter();
-
-  try {
-    const mailOptions = {
-      from: '"Hotel Booking" <welcome@hotel.com>',
-      to: user.email,
-      subject: 'Welcome to Best Garden Hotel!',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2d3748;">Welcome to Best Garden Hotel!</h2>
-          <p>Dear ${user.fullName},</p>
-          <p>Thank you for creating an account with us. We're excited to have you on board!</p>
-          <p>With your account, you can:</p>
-          <ul>
-            <li>Book rooms at our hotels</li>
-            <li>Manage your reservations</li>
-            <li>Receive special offers and discounts</li>
-            <li>Save your preferences for future bookings</li>
-          </ul>
-          <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-          <p>Best regards,<br>The Hotel Team</p>
-        </div>
-      `
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    return {
-      success: true,
-      messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
-    };
-  } catch (error) {
-    console.error('Error sending welcome email:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
-
-export async function sendVerificationEmail(email, token) {
-  const transporter = await createTransporter();
-  const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/verify-email?token=${token}`;
-  
-  const mailOptions = {
-    from: '"Hotel Booking" <verify@hotel.com>',
-    to: email,
-    subject: 'Verify your email address',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Welcome to Best Garden Hotel!</h2>
-        <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-        <div style="text-align: center; margin: 20px 0;">
-          <a href="${verificationUrl}" 
-             style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-            Verify Email Address
-          </a>
-        </div>
-        <p>If you did not create an account, please ignore this email.</p>
-        <p>This verification link will expire in 24 hours.</p>
-        <hr style="border: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">
-          This is an automated message, please do not reply to this email.
-        </p>
-      </div>
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Verification email sent successfully');
-    return {
-      success: true,
-      messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
-    };
-  } catch (error) {
-    console.error('Error sending verification email:', error);
     return {
       success: false,
       error: error.message

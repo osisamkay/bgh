@@ -85,7 +85,8 @@ export function AuthProvider({ children }) {
       return {
         success: true,
         message: data.message,
-        details: data.details
+        details: data.details,
+        emailDetails: data.emailDetails || null
       };
     } catch (error) {
       console.error('Signup error:', error);
