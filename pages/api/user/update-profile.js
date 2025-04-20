@@ -1,6 +1,6 @@
 // pages/api/user/update-profile.js
 import prisma from '@/lib/prisma';
-import { verifyAccessToken } from '@/utils/auth';
+import { verifyToken } from '@/utils/auth';
 
 export default async function handler(req, res) {
     if (req.method !== 'PUT') {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         }
 
         const token = authHeader.split(' ')[1];
-        const user = await verifyAccessToken(token);
+        const user = await verifyToken(token);
 
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid or expired token' });

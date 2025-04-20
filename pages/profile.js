@@ -1,8 +1,9 @@
 // pages/profile.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import withAuth from '@/components/auth/withAuth';
 import { useAuth } from '@/contexts/AuthContext';
+import ProfileUpdateModal from '@/components/ProfileUpdateModal';
 
 const EditModal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
@@ -27,15 +28,11 @@ const EditModal = ({ isOpen, onClose, title, children }) => {
 const Profile = () => {
     const { user, updateUser } = useAuth();
     const [editMode, setEditMode] = useState(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         password: '',
         newPassword: '',
-        confirmPassword: '',
-        phone: user?.phone || '',
-        streetAddress: user?.streetAddress || '',
-        city: user?.city || '',
-        province: user?.province || '',
-        postalCode: user?.postalCode || ''
+        confirmPassword: ''
     });
 
     const handleInputChange = (e) => {
@@ -46,128 +43,17 @@ const Profile = () => {
         }));
     };
 
-    const handleSave = async () => {
+    const handlePasswordSave = async () => {
         try {
-            if (editMode === 'password') {
-                // Handle password change
-                if (formData.newPassword !== formData.confirmPassword) {
-                    alert('Passwords do not match');
-                    return;
-                }
-                // Add password change logic here
-            } else {
-                await updateUser({
-                    phone: formData.phone,
-                    streetAddress: formData.streetAddress,
-                    city: formData.city,
-                    province: formData.province,
-                    postalCode: formData.postalCode
-                });
+            if (formData.newPassword !== formData.confirmPassword) {
+                alert('Passwords do not match');
+                return;
             }
+            // Add password change logic here
             setEditMode(null);
         } catch (error) {
-            console.error('Error updating profile:', error);
-            alert('Failed to update profile');
-        }
-    };
-
-    const renderEditForm = () => {
-        switch (editMode) {
-            case 'password':
-                return (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                            <input
-                                type="password"
-                                name="newPassword"
-                                value={formData.newPassword}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                            <input
-                                type="password"
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-                );
-            case 'address':
-                return (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
-                            <input
-                                type="text"
-                                name="streetAddress"
-                                value={formData.streetAddress}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                            <input
-                                type="text"
-                                name="province"
-                                value={formData.province}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
-                            <input
-                                type="text"
-                                name="postalCode"
-                                value={formData.postalCode}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-                );
-            case 'phone':
-                return (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-                );
-            default:
-                return null;
+            console.error('Error updating password:', error);
+            alert('Failed to update password');
         }
     };
 
@@ -178,7 +64,7 @@ const Profile = () => {
                 <meta name="description" content="Manage your Best Garden Hotel profile" />
             </Head>
 
-            <div className="min-h-screen ">
+            <div className="min-h-screen">
                 <div className="container mx-auto px-4 py-12">
                     <h1 className="text-4xl font-light text-center mb-12 text-gray-800">Manage Your Account</h1>
 
@@ -230,12 +116,11 @@ const Profile = () => {
                                 </div>
                                 <div className="space-y-3">
                                     <button
-                                        onClick={() => setEditMode('address')}
+                                        onClick={() => setIsProfileModalOpen(true)}
                                         className="w-full border-2 border-gray-800 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-all duration-200 font-medium"
                                     >
-                                        EDIT ADDRESS
+                                        EDIT PROFILE
                                     </button>
-
                                 </div>
                             </section>
                         </div>
@@ -263,10 +148,10 @@ const Profile = () => {
                                 </div>
                                 <div className="space-y-3">
                                     <button
-                                        onClick={() => setEditMode('phone')}
+                                        onClick={() => setIsProfileModalOpen(true)}
                                         className="w-full border-2 border-gray-800 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-all duration-200 font-medium"
                                     >
-                                        EDIT PHONE NUMBER
+                                        EDIT PROFILE
                                     </button>
                                 </div>
                             </section>
@@ -275,31 +160,66 @@ const Profile = () => {
                 </div>
             </div>
 
+            {/* Password Change Modal */}
             <EditModal
-                isOpen={!!editMode}
+                isOpen={editMode === 'password'}
                 onClose={() => setEditMode(null)}
-                title={
-                    editMode === 'password' ? 'Change Password' :
-                        editMode === 'address' ? 'Edit Address' :
-                            editMode === 'phone' ? 'Edit Phone Number' : ''
-                }
+                title="Change Password"
             >
-                {renderEditForm()}
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                        onClick={() => setEditMode(null)}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                        Save Changes
-                    </button>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input
+                            type="password"
+                            name="newPassword"
+                            value={formData.newPassword}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                            onClick={() => setEditMode(null)}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handlePasswordSave}
+                            className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
                 </div>
             </EditModal>
+
+            {/* Profile Update Modal */}
+            <ProfileUpdateModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                currentUser={user}
+            />
         </main>
     );
 }
