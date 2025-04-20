@@ -1,4 +1,4 @@
-import { prisma } from '../../../lib/prisma';
+import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import { sendVerificationEmail } from '../../../utils/email';
 import crypto from 'crypto';
@@ -19,7 +19,8 @@ export default async function handler(req, res) {
       postalCode,
       province,
       country,
-      termsAccepted
+      termsAccepted,
+      isAdmin = false // Add isAdmin flag
     } = req.body;
 
     // Validate required fields with specific messages
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
     if (!termsAccepted) missingFields.push('Terms and Conditions');
 
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing required fields',
         details: missingFields.join(', ')
       });
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid email format',
         details: 'Please enter a valid email address'
       });
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
 
     // Validate password strength
     if (password.length < 8) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Weak password',
         details: 'Password must be at least 8 characters long'
       });
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Email already registered',
         details: 'This email address is already in use. Please use a different email or try logging in.'
       });
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with role based on isAdmin flag
     const user = await prisma.user.create({
       data: {
         name: `${firstName} ${lastName}`,
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
         province,
         country,
         termsAccepted,
-        role: 'USER'
+        role: isAdmin ? 'ADMIN' : 'USER'
       }
     });
 
@@ -115,7 +116,8 @@ export default async function handler(req, res) {
         return res.status(200).json({
           message: 'User registered successfully, but verification email could not be sent.',
           details: 'Please contact support to verify your email address.',
-          userId: user.id
+          userId: user.id,
+          isAdmin: user.role === 'ADMIN'
         });
       }
     } catch (emailError) {
@@ -123,7 +125,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         message: 'User registered successfully, but verification email could not be sent.',
         details: 'Please contact support to verify your email address.',
-        userId: user.id
+        userId: user.id,
+        isAdmin: user.role === 'ADMIN'
       });
     }
 
@@ -132,6 +135,7 @@ export default async function handler(req, res) {
       message: 'User registered successfully',
       details: 'Please check your email to verify your account.',
       userId: user.id,
+      isAdmin: user.role === 'ADMIN',
       emailDetails: emailResult ? {
         previewUrl: emailResult.previewUrl,
         messageId: emailResult.messageId,
@@ -141,7 +145,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Signup error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
       details: error.message || 'An unexpected error occurred. Please try again later.'
     });

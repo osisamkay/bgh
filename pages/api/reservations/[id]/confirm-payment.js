@@ -1,8 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { verifyToken } from '@/utils/auth';
 import { sendEmail } from '@/utils/email';
+import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Cache for payment intents to prevent duplicate charges
+const paymentIntentCache = new Map();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -28,11 +33,17 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Payment details are required' });
         }
 
+        // Check if this payment intent has already been processed
+        if (paymentIntentCache.has(paymentIntentId)) {
+            return res.status(400).json({ error: 'Payment already processed' });
+        }
+
         const reservation = await prisma.booking.findUnique({
             where: { id },
             include: {
                 user: true,
-                room: true
+                room: true,
+                payment: true
             }
         });
 
@@ -52,9 +63,26 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid reservation status for payment confirmation' });
         }
 
+        // Verify payment with Stripe
+        let paymentIntent;
+        try {
+            paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+            if (paymentIntent.status !== 'succeeded') {
+                return res.status(400).json({ error: 'Payment not successful' });
+            }
+
+            if (paymentIntent.amount !== Math.round(paymentAmount * 100)) {
+                return res.status(400).json({ error: 'Payment amount mismatch' });
+            }
+        } catch (error) {
+            console.error('Stripe payment verification error:', error);
+            return res.status(500).json({ error: 'Failed to verify payment with Stripe' });
+        }
+
         // Use transaction to ensure both payment and reservation updates succeed
         const result = await prisma.$transaction(async (tx) => {
-            // Create payment record
+            // Create payment record with status tracking
             const payment = await tx.payment.create({
                 data: {
                     amount: paymentAmount,
@@ -62,6 +90,11 @@ export default async function handler(req, res) {
                     status: 'completed',
                     paymentMethod: 'stripe',
                     paymentDate: new Date(),
+                    metadata: {
+                        stripePaymentIntentId: paymentIntentId,
+                        stripeStatus: paymentIntent.status,
+                        retryCount: 0
+                    },
                     booking: {
                         connect: { id }
                     },
@@ -87,6 +120,12 @@ export default async function handler(req, res) {
             });
 
             return { payment, updatedReservation };
+        });
+
+        // Cache the payment intent to prevent duplicate charges
+        paymentIntentCache.set(paymentIntentId, {
+            timestamp: Date.now(),
+            reservationId: id
         });
 
         // Send confirmation email
@@ -122,6 +161,15 @@ export default async function handler(req, res) {
         });
     } catch (error) {
         console.error('Error confirming payment:', error);
+
+        // If it's a database error, attempt retry
+        if (error.code === 'P2002' || error.code === 'P2025') {
+            return res.status(409).json({
+                error: 'Payment processing conflict. Please try again.',
+                retry: true
+            });
+        }
+
         return res.status(500).json({ error: 'Failed to confirm payment' });
     } finally {
         await prisma.$disconnect();

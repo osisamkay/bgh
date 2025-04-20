@@ -17,6 +17,7 @@ export default function Login() {
     rememberMe: false
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -29,16 +30,16 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      const result = await login(formData.email, formData.password);
-
-      if (!result.success) {
-        addNotification(result.message, 'error');
+      const response = await login(formData.email, formData.password);
+      if (response.success) {
+        // The AuthContext will handle the routing based on user role
+        return;
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      addNotification('An unexpected error occurred', 'error');
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }

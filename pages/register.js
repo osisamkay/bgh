@@ -22,7 +22,8 @@ const Register = () => {
     postalCode: '',
     provinceState: '',
     country: '',
-    termsAccepted: false
+    termsAccepted: false,
+    isAdmin: false
   });
 
   const [errors, setErrors] = useState({});
@@ -34,18 +35,18 @@ const Register = () => {
   useEffect(() => {
     const fetchGuestData = async () => {
       const { prefilledData, returnUrl } = router.query;
-      
+
       setReturnUrl(returnUrl)
       if (prefilledData) {
         try {
           setIsLoading(true);
           const decodedData = JSON.parse(decodeURIComponent(prefilledData));
-          
+
           if (decodedData.reservationId) {
             // Fetch guest information from the reservation
             const response = await fetch(`/api/reservations/${decodedData.reservationId}`);
             const data = await response.json();
-            
+
             if (response.ok && data.user) {
               // Prefill form with guest information
               setFormData(prev => ({
@@ -58,7 +59,8 @@ const Register = () => {
                 cityTown: data.user.city || '',
                 postalCode: data.user.postalCode || '',
                 provinceState: data.user.province || '',
-                country: data.user.country || ''
+                country: data.user.country || '',
+                isAdmin: data.user.isAdmin || false
               }));
             }
           }
@@ -76,7 +78,7 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Required fields validation
     if (!formData.firstName) newErrors.firstName = 'First name is required';
     if (!formData.lastName) newErrors.lastName = 'Last name is required';
@@ -98,11 +100,11 @@ const Register = () => {
 
     // Password validation
     if (formData.password) {
-      if (formData.password.length < 8 || 
-          !/[A-Z]/.test(formData.password) || 
-          !/[a-z]/.test(formData.password) || 
-          !/[0-9]/.test(formData.password) || 
-          !/[!@#$%^&*]/.test(formData.password)) {
+      if (formData.password.length < 8 ||
+        !/[A-Z]/.test(formData.password) ||
+        !/[a-z]/.test(formData.password) ||
+        !/[0-9]/.test(formData.password) ||
+        !/[!@#$%^&*]/.test(formData.password)) {
         newErrors.password = 'Password must be at least 8 characters with one uppercase letter, one lowercase letter, one number, and one special character';
       }
     }
@@ -118,7 +120,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -161,7 +163,7 @@ const Register = () => {
 
         if (updateResponse.ok) {
           addNotification('Your account has been updated successfully!', 'success');
-          
+
           // Handle redirects
           if (updateData.redirectUrl) {
             // Redirect to payment page with reservation details
@@ -189,7 +191,8 @@ const Register = () => {
           postalCode: formData.postalCode,
           province: formData.provinceState,
           country: formData.country,
-          termsAccepted: formData.termsAccepted
+          termsAccepted: formData.termsAccepted,
+          isAdmin: formData.isAdmin
         });
 
         if (result.success) {
@@ -198,10 +201,12 @@ const Register = () => {
             setEmailPreviewUrl(result.emailDetails.previewUrl);
             // Delay redirect to allow user to see the email preview
             setTimeout(() => {
-              router.push('/login');
+              // Redirect admin users to dashboard, others to login
+              router.push(result.isAdmin ? '/admin/dashboard' : '/login');
             }, 5000);
           } else {
-            router.push('/login');
+            // Redirect admin users to dashboard, others to login
+            router.push(result.isAdmin ? '/admin/dashboard' : '/login');
           }
           addNotification('Registration successful! Please check your email to verify your account.', 'success');
         } else {

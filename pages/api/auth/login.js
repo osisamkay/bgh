@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         userId: user.id,
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
-        role: user.role || 'user',
+        role: user.role || 'USER',
         emailVerified: user.emailVerified || false
       },
       JWT_SECRET,
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: user.role || 'user',
+          role: user.role || 'USER',
           emailVerified: false,
           emailVerifiedAt: null
         },
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role || 'user',
+        role: user.role || 'USER',
         emailVerified: true,
         emailVerifiedAt: user.emailVerifiedAt
       }

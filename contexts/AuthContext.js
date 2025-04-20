@@ -43,18 +43,11 @@ export function AuthProvider({ children }) {
 
       if (response.ok) {
         const data = await response.json();
-        // Fetch complete user profile
-        const profileResponse = await fetch('/api/user/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        setUser(data.user);
 
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          setUser(profileData);
-        } else {
-          setUser(data.user);
+        // If we're on a protected admin route and user is not admin, redirect to home
+        if (router.pathname.startsWith('/admin') && data.user.role !== 'ADMIN') {
+          router.push('/');
         }
       } else {
         // Invalid token, clear storage
@@ -182,7 +175,14 @@ export function AuthProvider({ children }) {
 
       // Email is verified
       addNotification('Login successful', 'success');
-      router.push('/');
+
+      // Route based on user role
+      if (data.user.role === 'ADMIN') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/');
+      }
+
       return {
         success: true,
         message: 'Login successful'
@@ -280,7 +280,8 @@ export function AuthProvider({ children }) {
     verifyEmail,
     resetPassword,
     updateUser,
-    fetchUserProfile
+    fetchUserProfile,
+    validateToken
   };
 
   return (

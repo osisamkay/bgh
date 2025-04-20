@@ -1,59 +1,49 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/utils/email';
+import { verifyToken } from '@/utils/auth';
 
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || session.user.role !== 'ADMIN') {
+    // Get token from header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { message: 'No token provided' },
         { status: 401 }
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const type = searchParams.get('type');
-    const date = searchParams.get('date');
+    const token = authHeader.split(' ')[1];
 
-    const where = {};
-    if (status && status !== 'ALL') {
-      where.status = status;
+    // Verify token and get user
+    const user = await verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Invalid token' },
+        { status: 401 }
+      );
     }
-    if (type && type !== 'ALL') {
-      where.type = type;
-    }
-    if (date) {
-      where.createdAt = {
-        gte: new Date(date),
-        lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
-      };
+
+    // Check if user is admin
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 403 }
+      );
     }
 
     const requests = await prisma.adminRequest.findMany({
-      where,
+      orderBy: {
+        createdAt: 'desc'
+      },
       include: {
         requestedBy: {
           select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        approvedBy: {
-          select: {
-            id: true,
             name: true,
             email: true
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
     });
 
@@ -61,7 +51,7 @@ export async function GET(req) {
   } catch (error) {
     console.error('Error fetching admin requests:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch admin requests' },
+      { message: 'Error fetching admin requests' },
       { status: 500 }
     );
   }
@@ -69,12 +59,31 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user.role !== 'FRONT_DESK' && session.user.role !== 'ADMIN')) {
+    // Get token from header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { message: 'No token provided' },
         { status: 401 }
+      );
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Verify token and get user
+    const user = await verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is admin or front desk
+    if (user.role !== 'ADMIN' && user.role !== 'FRONT_DESK') {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 403 }
       );
     }
 
@@ -133,7 +142,7 @@ export async function POST(req) {
   } catch (error) {
     console.error('Error creating admin request:', error);
     return NextResponse.json(
-      { error: 'Failed to create admin request' },
+      { message: 'Failed to create admin request' },
       { status: 500 }
     );
   }

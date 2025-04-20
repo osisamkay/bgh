@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role || 'user',
+        role: user.role || 'USER',
         emailVerified: user.emailVerified || false
       }
     });
