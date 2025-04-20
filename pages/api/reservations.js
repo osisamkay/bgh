@@ -152,7 +152,17 @@ export default async function handler(req, res) {
       // Send confirmation email and get preview URL
       let emailPreviewUrl = null;
       try {
-        const emailResult = await sendReservationEmail(reservation);
+        const emailResult = await sendReservationEmail({
+          to: email.toLowerCase(),
+          name: fullName,
+          roomType: room.type,
+          checkIn: new Date(checkInDate),
+          checkOut: new Date(checkOutDate),
+          guests: parseInt(numberOfGuests, 10),
+          totalPrice: totalPrice,
+          reservationId: reservation.id,
+          specialRequests: specialRequests || ''
+        });
         emailPreviewUrl = emailResult.previewUrl;
       } catch (error) {
         console.error('Failed to send confirmation email:', error);

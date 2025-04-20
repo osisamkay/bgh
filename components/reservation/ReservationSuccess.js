@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-const ReservationSuccess = ({ reservation }) => {
+const ReservationSuccess = ({ reservation, emailPreviewUrl }) => {
   const expiresAt = new Date(reservation.expiresAt);
   const timeLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60)); // minutes left
   console.log(timeLeft)
@@ -52,12 +52,13 @@ const ReservationSuccess = ({ reservation }) => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center space-y-4">
+      <div className="flex flex-col md:flex-row gap-4 justify-center">
         <Link
-          href={`/register?reservationId=${reservation.id}`}
-          className="btn btn-primary w-full md:w-1/3 text-center"
+          href={`/`}
+          // href={`/register?reservationId=${reservation.id}`}
+          className="btn bg-gray-900 text-white w-full md:w-1/3 text-center"
         >
-          Book Room Now
+          Back to Homepage
         </Link>
         <button
           onClick={() => window.print()}
@@ -66,6 +67,22 @@ const ReservationSuccess = ({ reservation }) => {
           Print Reservation
         </button>
       </div>
+
+      {emailPreviewUrl && (
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600 mb-2">
+            We've sent you a confirmation email. Click below to preview it:
+          </p>
+          <a
+            href={emailPreviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline text-sm"
+          >
+            View Email Confirmation
+          </a>
+        </div>
+      )}
     </div>
   );
 };

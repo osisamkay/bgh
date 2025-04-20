@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 import { useNotification } from '../../contexts/NotificationContext';
 import ReservationForm from '../../components/reservation/ReservationForm';
+import EmailPreview from '../../components/notifications/EmailPreview';
 import ReservationSuccess from '../../components/reservation/ReservationSuccess';
 
 export default function ReservationPage() {
@@ -13,6 +14,7 @@ export default function ReservationPage() {
   const { id, checkIn, checkOut, guests } = router.query;
   const [room, setRoom] = useState(null);
   const [reservation, setReservation] = useState(null);
+  const [emailPreviewUrl, setEmailPreviewUrl] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -120,14 +122,22 @@ export default function ReservationPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create reservation');
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'Failed to create reservation');
       }
 
       const data = await response.json();
-      setReservation(data);
+      console.log('Reservation response:', data); // Debug log
+      setReservation(data.reservation);
+      if (data.emailPreviewUrl) {
+        setEmailPreviewUrl(data.emailPreviewUrl);
+        // Clear email preview after 30 seconds
+        setTimeout(() => setEmailPreviewUrl(null), 30000);
+      }
       addNotification('Reservation created successfully!', 'success');
     } catch (error) {
       setError(error.message);
+      addNotification(error.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -196,7 +206,10 @@ export default function ReservationPage() {
               <h2 className="text-2xl font-bold mb-8">Complete your Reservation</h2>
               
               {reservation ? (
-                <ReservationSuccess reservation={reservation} />
+                <ReservationSuccess 
+                  reservation={reservation} 
+                  emailPreviewUrl={emailPreviewUrl}
+                />
               ) : (
                 <ReservationForm
                   room={room}
@@ -205,8 +218,13 @@ export default function ReservationPage() {
                   onSubmit={handleSubmit}
                   isSubmitting={isSubmitting}
                   error={error}
-                  onReservationComplete={(reservationData) => {
+                  onReservationComplete={(reservationData, previewUrl) => {
                     setReservation(reservationData);
+                    if (previewUrl) {
+                      setEmailPreviewUrl(previewUrl);
+                      // Clear email preview after 30 seconds
+                      setTimeout(() => setEmailPreviewUrl(null), 30000);
+                    }
                     addNotification('Reservation created successfully!', 'success');
                   }}
                 />
@@ -214,6 +232,13 @@ export default function ReservationPage() {
             </div>
           </div>
         </div>
+
+        {emailPreviewUrl && (
+          <EmailPreview
+            previewUrl={emailPreviewUrl}
+            onClose={() => setEmailPreviewUrl(null)}
+          />
+        )}
       </main>
     </div>
   );

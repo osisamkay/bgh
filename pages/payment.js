@@ -4,6 +4,17 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  CardElement,
+  Elements,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+
+// Initialize Stripe with your publishable key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 const Payment = () => {
   const router = useRouter();
@@ -78,6 +89,8 @@ const Payment = () => {
     }
   });
 
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+
   useEffect(() => {
     if (user) {
       setCustomerInfo({
@@ -93,6 +106,35 @@ const Payment = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    // Fetch booking details when component mounts
+    async function fetchBookingDetails() {
+      try {
+        const response = await fetch(`/api/bookings/${router.query.bookingId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch booking details');
+        }
+
+        // Verify booking hasn't been paid already
+        if (data.payment && data.payment.status === 'completed') {
+          router.push('/booking-confirmation');
+          return;
+        }
+
+        setBookingDetails(data);
+      } catch (error) {
+        console.error('Error fetching booking details:', error);
+        router.push('/error');
+      }
+    }
+
+    if (router.query.bookingId) {
+      fetchBookingDetails();
+    }
+  }, [router.query.bookingId]);
 
   const handleCustomerInfoChange = (e) => {
     const { name, value } = e.target;
@@ -164,6 +206,23 @@ const Payment = () => {
       addNotification('You can now edit your information', 'info');
     }
   };
+
+  const handlePaymentComplete = async (paymentResult) => {
+    setPaymentStatus('success');
+    
+    // Redirect to confirmation page after a short delay
+    setTimeout(() => {
+      router.push(`/booking-confirmation?id=${bookingDetails.id}`);
+    }, 2000);
+  };
+
+  if (!bookingDetails) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F4F0]">
@@ -472,31 +531,43 @@ const Payment = () => {
             <div className="relative h-64 mb-4">
               <Image
                 src={bookingDetails.room.images[currentImageIndex]}
-                alt="Room"
+                alt={`${bookingDetails.room.type} - Image ${currentImageIndex + 1}`}
                 layout="fill"
                 objectFit="cover"
                 className="rounded"
+                priority={currentImageIndex === 0}
+                onError={(e) => {
+                  e.target.src = '/images/rooms/placeholder.jpg';
+                }}
               />
+              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
               <button
                 onClick={handlePrevImage}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                aria-label="Previous image"
               >
-                &lt;
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
               <button
                 onClick={handleNextImage}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-opacity"
+                aria-label="Next image"
               >
-                &gt;
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
                 {bookingDetails.room.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-gray-400'
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentImageIndex ? 'bg-white' : 'bg-gray-400 hover:bg-gray-300'
                     }`}
                     onClick={() => setCurrentImageIndex(index)}
+                    aria-label={`Go to image ${index + 1}`}
                   />
                 ))}
               </div>

@@ -147,7 +147,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
       }
 
       addNotification(data.details || 'Reservation created successfully!', 'success');
-      onReservationComplete(data.reservation);
+      onReservationComplete(data.reservation, data.emailPreviewUrl);
     } catch (error) {
       addNotification('An error occurred while creating your reservation', 'error');
     } finally {
@@ -203,7 +203,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Format: +1 234 567 8900 (at least 10 digits)</p>
+                {/* <p className="text-xs text-gray-500 mt-1">Format: +1 234 567 8900 (at least 10 digits)</p> */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Guests</label>
@@ -271,7 +271,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
             </div>
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-grey-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-amber-400"
+              className="w-full bg-gray-900 text-white py-3 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:bg-gray-400"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Processing...' : 'Complete Reservation'}

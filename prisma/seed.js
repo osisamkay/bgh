@@ -20,6 +20,8 @@ async function main() {
       province: 'AB',
       country: 'Canada',
       termsAccepted: true,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -40,6 +42,8 @@ async function main() {
       province: 'AB',
       country: 'Canada',
       termsAccepted: true,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -60,6 +64,8 @@ async function main() {
       province: 'AB',
       country: 'Canada',
       termsAccepted: true,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -73,12 +79,12 @@ async function main() {
       status: 'AVAILABLE',
       price: 250,
       description: 'Spacious room with king-size bed and city view',
-      image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070',
+      image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1920&q=80',
       images: JSON.stringify([
-        'https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070',
-        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070',
-        'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070'
+        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1631049421450-348ccd7f8949?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1631049035182-249067d7618e?auto=format&fit=crop&w=1920&q=80'
       ]),
       amenities: JSON.stringify([
         'King-size bed',
@@ -97,10 +103,12 @@ async function main() {
       status: 'AVAILABLE',
       price: 180,
       description: 'Comfortable room with two twin beds',
-      image: 'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070',
+      image: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1920&q=80',
       images: JSON.stringify([
-        'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070'
+        'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1595576508485-471de1245019?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1595576508517-7f0b25b836c0?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1595576508556-4f96f3e1fc96?auto=format&fit=crop&w=1920&q=80'
       ]),
       amenities: JSON.stringify([
         'Two twin beds',
@@ -116,10 +124,12 @@ async function main() {
       status: 'AVAILABLE',
       price: 400,
       description: 'Luxurious suite with separate living area',
-      image: 'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070',
+      image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1920&q=80',
       images: JSON.stringify([
-        'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070'
+        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1590490359683-658d3d23f972?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1590490360787-3a26f1d75fd6?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1590490360538-eb20758a6f94?auto=format&fit=crop&w=1920&q=80'
       ]),
       amenities: JSON.stringify([
         'King-size bed',
@@ -139,11 +149,12 @@ async function main() {
       status: 'AVAILABLE',
       price: 350,
       description: 'Stunning ocean view suite with balcony',
-      image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2070',
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1920&q=80',
       images: JSON.stringify([
-        'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2070',
-        'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070'
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1582719508461-957e41e34d99?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1582719478501-0f6e0d2b7a3b?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1582719478501-0f6e0d2b7a3c?auto=format&fit=crop&w=1920&q=80'
       ]),
       amenities: JSON.stringify([
         'King-size bed',
@@ -163,10 +174,12 @@ async function main() {
       status: 'AVAILABLE',
       price: 300,
       description: 'Spacious suite perfect for families',
-      image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070',
+      image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1920&q=80',
       images: JSON.stringify([
-        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2070',
-        'https://images.unsplash.com/photo-1566669437685-6e6b0a3b0b0b?q=80&w=2070'
+        'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1616594039999-3e9c0bcd2a3e?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1616594039904-fe1696e13052?auto=format&fit=crop&w=1920&q=80',
+        'https://images.unsplash.com/photo-1616594039942-4b341b61f052?auto=format&fit=crop&w=1920&q=80'
       ]),
       amenities: JSON.stringify([
         'Two queen beds',
@@ -179,9 +192,7 @@ async function main() {
         'Coffee maker',
         'Crib available'
       ])
-    },
-    // Keep remaining room data
-    // ...rest of the rooms (truncated for brevity)
+    }
   ];
 
   // Create rooms in database

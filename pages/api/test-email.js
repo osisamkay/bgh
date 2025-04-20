@@ -8,42 +8,38 @@ export default async function handler(req, res) {
   try {
     // Create a test reservation object
     const testReservation = {
-      user: {
-        name: 'Test User',
-        email: 'test@example.com'
-      },
-      room: {
-        type: 'Deluxe Suite'
-      },
-      checkInDate: new Date('2024-04-01'),
-      checkOutDate: new Date('2024-04-03'),
-      numberOfGuests: 2,
-      totalPrice: 299.99,
+      to: 'test@example.com',
+      name: 'John Doe',
+      roomType: 'Deluxe Suite',
+      checkIn: new Date('2024-04-01'),
+      checkOut: new Date('2024-04-05'),
+      guests: 2,
+      totalPrice: 1200.00,
+      reservationId: 'TEST-' + Date.now(),
       specialRequests: 'Early check-in requested'
     };
 
     // Send test email
-    const result = await sendReservationEmail(testReservation);
+    const emailResult = await sendReservationEmail(testReservation);
     
-    // Log the Ethereal account details
-    console.log('Ethereal Account Details:', {
-      user: result.etherealUser,
-      pass: result.etherealPass,
-      previewUrl: result.previewUrl
+    console.log('Ethereal Email Account:', {
+      user: emailResult.etherealUser,
+      pass: emailResult.etherealPass,
+      previewUrl: emailResult.previewUrl
     });
 
     return res.status(200).json({
       success: true,
       message: 'Test email sent successfully',
       emailDetails: {
-        previewUrl: result.previewUrl,
-        messageId: result.messageId,
-        etherealUser: result.etherealUser,
-        etherealPass: result.etherealPass
+        previewUrl: emailResult.previewUrl,
+        messageId: emailResult.messageId,
+        etherealUser: emailResult.etherealUser,
+        etherealPass: emailResult.etherealPass
       }
     });
   } catch (error) {
-    console.error('Test email error:', error);
+    console.error('Error in test-email endpoint:', error);
     return res.status(500).json({
       success: false,
       error: error.message
