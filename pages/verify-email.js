@@ -3,40 +3,84 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function VerifyEmail() {
   const router = useRouter();
   const { user } = useAuth();
-  const [timeLeft, setTimeLeft] = useState(5);
+  const { addNotification } = useNotification();
+  const [timeLeft, setTimeLeft] = useState(60); // 60 seconds timeout
+  const [token, setToken] = useState('');
+  
+  useEffect(() => {
+    // Check if there's a token in the URL (for direct verification links)
+    const { token: urlToken } = router.query;
+    if (urlToken) {
+      setToken(urlToken);
+    }
+  }, [router.query]);
 
   useEffect(() => {
-    // Redirect to login if no user
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    // Redirect to home if already verified
-    if (user.emailVerified) {
+    // If user is already verified, redirect to home
+    if (user && user.emailVerified) {
+      addNotification('Your email is already verified', 'info');
       router.push('/');
       return;
     }
 
-    // Countdown timer
+    // If user is not logged in at all, redirect to login
+    if (!user && !router.query.token) {
+      router.push('/login');
+      return;
+    }
+
+    // Countdown timer for automatic redirection
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           router.push('/');
+          return 0;
         }
         return prev - 1;
       });
-    }, 9000000000000000000000000);
+    }, 1000);
 
     return () => clearInterval(timer);
-  }, [user, router]);
+  }, [user, router, addNotification]);
 
-  if (!user) {
+  // Handle verification from URL token
+  useEffect(() => {
+    const verifyFromToken = async () => {
+      if (token) {
+        try {
+          const response = await fetch('/api/auth/verify-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            addNotification('Email verified successfully!', 'success');
+            router.push('/login');
+          } else {
+            addNotification(data.message || 'Verification failed', 'error');
+          }
+        } catch (error) {
+          console.error('Verification error:', error);
+          addNotification('An error occurred during verification', 'error');
+        }
+      }
+    };
+    
+    verifyFromToken();
+  }, [token, router, addNotification]);
+
+  if (!user && !token) {
     return null;
   }
 
@@ -69,7 +113,7 @@ export default function VerifyEmail() {
                   </h3>
                   <div className="mt-2 text-sm text-yellow-700">
                     <p>
-                      We've sent a verification link to <strong>{user.email}</strong>. Please check your email and click the link to verify your account.
+                      We've sent a verification link to <strong>{user?.email}</strong>. Please check your email and click the link to verify your account.
                     </p>
                   </div>
                 </div>
@@ -100,4 +144,4 @@ export default function VerifyEmail() {
       </div>
     </div>
   );
-} 
+}

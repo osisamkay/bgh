@@ -79,8 +79,16 @@ export function AuthProvider({ children }) {
         // Set up token refresh
         setupTokenRefresh(token, refreshToken);
 
+        // Check if user needs to verify email
+        if (data.user && !data.user.emailVerified) {
+          // If the current page is not already the verify email page, redirect there
+          if (router.pathname !== '/verify-email' && router.pathname !== '/resend-verification') {
+            addNotification('Please verify your email to access all features', 'warning');
+            router.push('/verify-email');
+          }
+        }
         // Route protection for admin pages
-        if (router.pathname.startsWith('/admin') && data.user.role !== 'ADMIN') {
+        else if (router.pathname.startsWith('/admin') && data.user.role !== 'ADMIN') {
           router.push('/');
           addNotification('Access denied: Admin privileges required', 'error');
         }
@@ -268,7 +276,7 @@ export function AuthProvider({ children }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
-        });
+        }).catch(error => console.log('Logout API call failed:', error));
       }
 
       // Clear local storage

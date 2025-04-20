@@ -5,13 +5,11 @@ import crypto from 'crypto';
 
 // Constants
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-jwt';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET;
 
 // Authenticate user with secure token generation
 export const authenticateUser = async (email, password) => {
   // Defensive check for inputs
   if (!email || !password) {
-    console.log('Missing email or password');
     return {
       success: false,
       message: 'Email and password are required',
@@ -20,24 +18,22 @@ export const authenticateUser = async (email, password) => {
   }
 
   try {
-    console.log('Finding user by email:', email);
     // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
       select: {
         id: true,
         email: true,
+        password: true,
         firstName: true,
         lastName: true,
         role: true,
-        emailVerified: true,
-        password: true
+        emailVerified: true
       }
     });
 
     // User not found
     if (!user) {
-      console.log('User not found for email:', email);
       return {
         success: false,
         message: 'Invalid email or password',
@@ -45,13 +41,11 @@ export const authenticateUser = async (email, password) => {
       };
     }
 
-    console.log('Verifying password for user:', user.email);
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     // Invalid password
     if (!isValidPassword) {
-      console.log('Invalid password for user:', user.email);
       return {
         success: false,
         message: 'Invalid email or password',
@@ -59,7 +53,6 @@ export const authenticateUser = async (email, password) => {
       };
     }
 
-    // User is valid at this point
     // Create safe user object without password
     const safeUser = {
       id: user.id,
@@ -70,7 +63,6 @@ export const authenticateUser = async (email, password) => {
       emailVerified: user.emailVerified || false
     };
 
-    console.log('Generating tokens for user:', user.email);
     // Generate tokens
     const accessToken = jwt.sign(
       {
@@ -91,7 +83,6 @@ export const authenticateUser = async (email, password) => {
 
     // Check if email verification is required
     if (!user.emailVerified) {
-      console.log('Email verification required for user:', user.email);
       return {
         success: true,
         requiresVerification: true,
@@ -102,7 +93,6 @@ export const authenticateUser = async (email, password) => {
       };
     }
 
-    console.log('Login successful for user:', user.email);
     // Email is verified
     return {
       success: true,
@@ -115,13 +105,14 @@ export const authenticateUser = async (email, password) => {
     console.error('Authentication error:', error);
     return {
       success: false,
-      message: 'An error occurred during authentication: ' + error.message,
+      message: 'An error occurred during authentication',
+      error: error.message,
       user: null
     };
   }
 };
 
-// Keep other functions from your original file
+// Verify JWT token
 export const verifyToken = async (token) => {
   if (!token) return null;
 
@@ -208,7 +199,7 @@ export async function generateVerificationToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-// Keep the rest of your utility functions
+// Add function for password reset token
 export const generatePasswordResetToken = async (userId) => {
   const resetToken = crypto.randomBytes(32).toString('hex');
   const tokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -322,13 +313,13 @@ export const registerUser = async (userData) => {
   }
 };
 
-// Verify refresh token and return user
-export const verifyRefreshToken = async (token) => {
-  if (!token) return null;
+// Verify refresh token and generate new access token
+export const verifyRefreshToken = async (refreshToken) => {
+  if (!refreshToken) return null;
 
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET);
+    // Verify the refresh token
+    const decoded = jwt.verify(refreshToken, JWT_SECRET);
 
     // Get user data
     const user = await prisma.user.findUnique({
@@ -338,24 +329,37 @@ export const verifyRefreshToken = async (token) => {
         email: true,
         firstName: true,
         lastName: true,
+        name: true,
         role: true,
         emailVerified: true
       }
     });
 
-    if (!user) {
-      console.log('User not found for refresh token');
-      return null;
-    }
+    if (!user) return null;
 
-    return user;
+    // Generate new access token
+    const accessToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role || 'USER',
+        emailVerified: user.emailVerified || false
+      },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    return {
+      user,
+      accessToken
+    };
   } catch (error) {
     console.error('Refresh token verification error:', error);
     return null;
   }
 };
 
-// Generate access token
+// Generate new access token
 export const generateAccessToken = (user) => {
   return jwt.sign(
     {

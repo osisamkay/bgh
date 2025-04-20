@@ -1,4 +1,4 @@
-import { verifyRefreshToken, generateAccessToken } from '@/utils/auth';
+import { verifyRefreshToken } from '@/utils/auth';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -28,23 +28,21 @@ export default async function handler(req, res) {
             });
         }
 
-        // Verify refresh token
-        const user = await verifyRefreshToken(refreshToken);
+        // Verify refresh token and get new access token
+        const result = await verifyRefreshToken(refreshToken);
 
-        if (!user) {
+        if (!result) {
             return res.status(403).json({
                 success: false,
                 message: 'Invalid or expired refresh token'
             });
         }
 
-        // Generate new access token
-        const accessToken = generateAccessToken(user);
-
-        // Return new access token
+        // Return new access token and user data
         return res.status(200).json({
             success: true,
-            token: accessToken
+            token: result.accessToken,
+            user: result.user
         });
     } catch (error) {
         console.error('Token refresh error:', error);
