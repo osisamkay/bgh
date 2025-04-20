@@ -218,7 +218,7 @@ export default function Profile() {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-semibold">Hello, {formData.firstName}</h1>
-                                <p className="text-gray-300 mt-1">Customer ID: {user.customerId}</p>
+                                <p className="text-gray-300 mt-1">Customer ID: {user?.id}</p>
                             </div>
                         </div>
                     </div>
