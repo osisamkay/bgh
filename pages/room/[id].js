@@ -44,12 +44,22 @@ export default function RoomDetails() {
   }, [id, router]);
 
   useEffect(() => {
-    // Load search parameters from localStorage
-    const savedParams = localStorage.getItem('searchParams');
-    if (savedParams) {
-      setSearchParams(JSON.parse(savedParams));
+    // Update searchParams with URL parameters if they exist
+    if (checkIn || checkOut || guests) {
+      setSearchParams(prev => ({
+        ...prev,
+        checkIn: checkIn || prev.checkIn,
+        checkOut: checkOut || prev.checkOut,
+        guests: guests || prev.guests
+      }));
+    } else {
+      // Load search parameters from localStorage if no URL parameters
+      const savedParams = localStorage.getItem('searchParams');
+      if (savedParams) {
+        setSearchParams(JSON.parse(savedParams));
+      }
     }
-  }, []);
+  }, [checkIn, checkOut, guests]);
 
   const handleImageNavigation = (direction) => {
     if (!room?.images) return;
@@ -76,9 +86,9 @@ export default function RoomDetails() {
     router.push({
       pathname: `/reserve/${id}`,
       query: {
-        checkIn,
-        checkOut,
-        guests
+        checkIn: searchParams.checkIn,
+        checkOut: searchParams.checkOut,
+        guests: searchParams.guests
       }
     });
   };
@@ -112,6 +122,11 @@ export default function RoomDetails() {
       return;
     }
 
+    if (!id) {
+      addNotification('Room ID is missing', 'error');
+      return;
+    }
+
     try {
       // Create a reservation first
       const response = await fetch('/api/reservations', {
@@ -121,7 +136,7 @@ export default function RoomDetails() {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify({
-          roomId: id, // Make sure to use roomId instead of id
+          id: id,
           checkInDate: searchParams.checkIn,
           checkOutDate: searchParams.checkOut,
           numberOfGuests: parseInt(searchParams.guests) || 1,
