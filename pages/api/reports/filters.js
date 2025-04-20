@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !['ADMIN', 'MANAGER'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -36,7 +36,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !['ADMIN', 'MANAGER'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -70,7 +70,7 @@ export async function POST(req) {
 export async function DELETE(req) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !['ADMIN', 'MANAGER'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },

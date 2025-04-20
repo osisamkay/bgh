@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { sendVerificationEmail } from '@/utils/emailService';
 import { generateVerificationToken } from '@/utils/auth';
 import { verifyToken } from '@/utils/auth';

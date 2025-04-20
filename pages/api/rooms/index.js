@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -15,12 +15,27 @@ export default async function handler(req, res) {
       }
     });
 
-    // Parse JSON strings for images and amenities
-    const parsedRooms = rooms.map(room => ({
-      ...room,
-      images: JSON.parse(room.images),
-      amenities: JSON.parse(room.amenities)
-    }));
+    if (!rooms) {
+      return res.status(404).json({ error: 'No rooms found' });
+    }
+
+    // Parse JSON strings for images and amenities with error handling
+    const parsedRooms = rooms.map(room => {
+      try {
+        return {
+          ...room,
+          images: room.images ? JSON.parse(room.images) : [],
+          amenities: room.amenities ? JSON.parse(room.amenities) : []
+        };
+      } catch (parseError) {
+        console.error('Error parsing room data:', parseError);
+        return {
+          ...room,
+          images: [],
+          amenities: []
+        };
+      }
+    });
 
     return res.status(200).json(parsedRooms);
   } catch (error) {

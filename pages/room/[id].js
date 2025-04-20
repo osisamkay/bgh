@@ -22,7 +22,7 @@ export default function RoomDetails() {
 
   const { checkIn, checkOut, guests } = router.query;
 
-  console.log("efew", user)
+  console.log("efew", user, fetchUserProfile)
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -37,7 +37,7 @@ export default function RoomDetails() {
           setIsLoading(false);
         } catch (error) {
           console.error('Error fetching room:', error);
-          router.push('/search');
+          // router.push('/search');
         }
       }
     };

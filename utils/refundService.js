@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { NotificationService } from './notificationService';
 
 const MAX_RETRY_ATTEMPTS = 3;

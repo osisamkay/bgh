@@ -3,12 +3,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import { NotificationService } from '@/utils/notificationService';
 import { RefundService } from '@/utils/refundService';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -17,7 +17,7 @@ export async function POST(req) {
     }
 
     const cancellationData = await req.json();
-    
+
     // Validate cancellation data
     if (!cancellationData.bookingId || !cancellationData.userId) {
       return NextResponse.json(

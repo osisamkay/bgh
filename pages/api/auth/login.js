@@ -1,17 +1,33 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
+import { authenticateUser } from '@/utils/auth';
+import rateLimit from '@/utils/rateLimit';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Create limiter: 10 requests per minute
+const limiter = rateLimit({
+  interval: 60 * 1000, // 1 minute
+  uniqueTokenPerInterval: 100, // Max 100 users per minute
+});
 
 export default async function handler(req, res) {
+  // Only allow POST method
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed'
+    });
   }
 
   try {
-    const { email, password } = req.body;
+    // Apply rate limiting
+    try {
+      await limiter.check(res, 10, 'login'); // 10 requests per minute
+    } catch (rateError) {
+      // The limiter already sent a response
+      return;
+    }
 
+    const { email, password, rememberMe } = req.body;
+
+    // Validate input
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -19,106 +35,59 @@ export default async function handler(req, res) {
       });
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      include: {
-        verificationTokens: {
-          where: {
-            expiresAt: {
-              gt: new Date()
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 1
-        }
-      }
-    });
+    // Authenticate user
+    const result = await authenticateUser(email, password);
 
-    if (!user) {
+    // Handle authentication failure
+    if (!result || result.success !== true) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: result?.message || 'Authentication failed'
       });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Update last login timestamp
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { updatedAt: new Date() }
-    });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        role: user.role || 'USER',
-        emailVerified: user.emailVerified || false
-      },
-      JWT_SECRET,
-      { expiresIn: '60m' }
-    );
-
-    // Check if email is verified
-    if (!user.emailVerified) {
-      const activeVerificationToken = user.verificationTokens[0];
-
-      // Return success but with verification needed status
+    // Check if email verification is required
+    if (result.requiresVerification === true) {
       return res.status(200).json({
         success: true,
         message: 'Login successful but email verification required',
         requiresVerification: true,
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role || 'USER',
-          emailVerified: false,
-          emailVerifiedAt: null
-        },
-        verificationNeeded: {
-          message: 'Please verify your email address to access all features',
-          hasActiveToken: !!activeVerificationToken,
-          tokenExpired: activeVerificationToken ? new Date(activeVerificationToken.expiresAt) < new Date() : true
-        }
+        token: result.accessToken || '',
+        refreshToken: result.refreshToken || '',
+        user: result.user || {}
       });
     }
 
-    // Return success with token and user data
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role || 'USER',
-        emailVerified: true,
-        emailVerifiedAt: user.emailVerifiedAt
-      }
-    });
+    // Email is verified, handle normal login
+    // Set secure cookie for refresh token if in production
+    if (process.env.NODE_ENV === 'production' && result.refreshToken) {
+      res.setHeader('Set-Cookie', [
+        `refreshToken=${result.refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${rememberMe ? 604800 : 86400}`
+      ]);
+
+      // Return response without the refresh token in body
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token: result.accessToken || '',
+        user: result.user || {}
+      });
+    } else {
+      // In development, include refresh token in response
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token: result.accessToken || '',
+        refreshToken: result.refreshToken || '',
+        user: result.user || {}
+      });
+    }
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({
       success: false,
-      message: 'An error occurred during login'
+      message: 'An error occurred during login',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-} 
+}

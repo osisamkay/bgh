@@ -1,72 +1,80 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// pages/api/auth/reset-password.js
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { sendEmail } from '@/utils/email';
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
   try {
-    const { email } = await req.json();
+    const { token, password } = req.body;
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Please provide an email address' },
-        { status: 400 }
-      );
-    }
-
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
-
-    if (!user) {
-      // For security reasons, we still return success even if the email doesn't exist
-      return NextResponse.json({
-        message: 'If an account exists with this email, you will receive password reset instructions'
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and new password are required'
       });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const tokenExpiry = new Date();
-    tokenExpiry.setHours(tokenExpiry.getHours() + 1); // Token valid for 1 hour
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
 
-    // Delete any existing reset tokens for this user
-    await prisma.resetToken.deleteMany({
-      where: { userId: user.id }
-    });
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
 
-    // Create new reset token
-    await prisma.resetToken.create({
-      data: {
-        token: resetToken,
-        userId: user.id,
-        expiresAt: tokenExpiry
+    // Find the reset token in database
+    const resetToken = await prisma.resetPasswordToken.findFirst({
+      where: {
+        token: hashedToken,
+        expiresAt: {
+          gt: new Date()
+        }
       }
     });
 
-    // Send reset email
-    await sendEmail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `
-        <h2>Password Reset Request</h2>
-        <p>Hello ${user.firstName},</p>
-        <p>You have requested to reset your password. Click the link below to proceed:</p>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}">Reset Password</a></p>
-        <p>This link will expire in 1 hour.</p>
-        <p>If you did not request this password reset, please ignore this email.</p>
-      `
+    if (!resetToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired password reset token'
+      });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Update user's password
+    await prisma.user.update({
+      where: { id: resetToken.userId },
+      data: {
+        password: hashedPassword
+      }
     });
 
-    return NextResponse.json({
-      message: 'If an account exists with this email, you will receive password reset instructions'
+    // Delete all reset tokens for this user
+    await prisma.resetPasswordToken.deleteMany({
+      where: { userId: resetToken.userId }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
     });
   } catch (error) {
     console.error('Password reset error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred during password reset. Please try again.'
+    });
   }
-} 
+}

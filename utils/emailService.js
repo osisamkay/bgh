@@ -1,72 +1,72 @@
+// utils/emailService.js
 import nodemailer from 'nodemailer';
-import {
-  getVerificationEmailTemplate,
-  getWelcomeEmailTemplate,
-  getReservationConfirmationTemplate,
-  getPasswordResetTemplate
-} from './emailTemplates';
 
-let testAccount = null;
-
-// Create Ethereal test account if it doesn't exist
-const getTestAccount = async () => {
-  if (!testAccount) {
-    testAccount = await nodemailer.createTestAccount();
-    console.log('Created Ethereal test account:', {
-      user: testAccount.user,
-      pass: testAccount.pass
+// Create transporter based on environment
+const getTransporter = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Production email settings
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  } else {
+    // Development/testing email settings with preview
+    return nodemailer.createTransport({
+      host: process.env.TEST_SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.TEST_SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.TEST_EMAIL_USER,
+        pass: process.env.TEST_EMAIL_PASS
+      }
     });
   }
-  return testAccount;
 };
 
-// Create transporter for sending emails
-const createTransporter = async () => {
-  const account = await getTestAccount();
-  
-  return nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
-    auth: {
-      user: account.user,
-      pass: account.pass
-    }
-  });
-};
-
-// Format date for email display
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+// Function to construct the full URL
+const getAppUrl = (path) => {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  return `${baseUrl}${path}`;
 };
 
 // Send verification email
 export const sendVerificationEmail = async ({ to, token, name }) => {
   try {
-    const transporter = await createTransporter();
-    const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/verify-email/${token}`;
+    const transporter = getTransporter();
+    const verificationUrl = getAppUrl(`/verify-email?token=${token}`);
 
-    const info = await transporter.sendMail({
-      from: '"BGH Support" <support@bgh-hotel.com>',
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"BGH Support" <support@bgh.com>',
       to,
-      subject: 'Verify Your Email - Best Garden Hotel',
-      html: getVerificationEmailTemplate({
-        name,
-        verificationUrl
-      })
-    });
+      subject: 'Verify your email address - Best Garden Hotel',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a2b3b;">Welcome to Best Garden Hotel!</h2>
+          <p>Hello ${name},</p>
+          <p>Thank you for registering with us. Please verify your email address by clicking the button below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #1a2b3b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
+          </div>
+          <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
+          <p><a href="${verificationUrl}">${verificationUrl}</a></p>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you did not create an account with us, please ignore this email.</p>
+          <p>Best regards,<br>The Best Garden Hotel Team</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
 
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
+      previewUrl: nodemailer.getTestMessageUrl(info)
     };
   } catch (error) {
     console.error('Error sending verification email:', error);
@@ -80,21 +80,41 @@ export const sendVerificationEmail = async ({ to, token, name }) => {
 // Send welcome email after verification
 export const sendWelcomeEmail = async ({ to, name }) => {
   try {
-    const transporter = await createTransporter();
+    const transporter = getTransporter();
+    const loginUrl = getAppUrl('/login');
 
-    const info = await transporter.sendMail({
-      from: '"BGH Welcome" <welcome@bgh-hotel.com>',
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"BGH Support" <support@bgh.com>',
       to,
       subject: 'Welcome to Best Garden Hotel!',
-      html: getWelcomeEmailTemplate({ name })
-    });
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a2b3b;">Thank You for Joining Best Garden Hotel!</h2>
+          <p>Hello ${name},</p>
+          <p>Your email has been successfully verified. Welcome to the Best Garden Hotel family!</p>
+          <p>You can now access all features of our website, including:</p>
+          <ul>
+            <li>Booking luxurious rooms at special member rates</li>
+            <li>Managing your reservations</li>
+            <li>Accessing exclusive offers and promotions</li>
+            <li>Saving your preferences for future stays</li>
+          </ul>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" style="background-color: #1a2b3b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Log In to Your Account</a>
+          </div>
+          <p>If you have any questions or need assistance, please don't hesitate to contact our customer support team.</p>
+          <p>We look forward to welcoming you soon!</p>
+          <p>Best regards,<br>The Best Garden Hotel Team</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
 
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
+      previewUrl: nodemailer.getTestMessageUrl(info)
     };
   } catch (error) {
     console.error('Error sending welcome email:', error);
@@ -105,86 +125,39 @@ export const sendWelcomeEmail = async ({ to, name }) => {
   }
 };
 
-// Send reservation confirmation email
-export const sendReservationEmail = async (reservation) => {
+// Send password reset email
+export const sendPasswordResetEmail = async ({ to, token, name }) => {
   try {
-    const transporter = await createTransporter();
-    const account = await getTestAccount();
-
-    if (!reservation.to) {
-      throw new Error('Recipient email address is required');
-    }
-
-    const formattedCheckIn = new Date(reservation.checkIn).toLocaleDateString();
-    const formattedCheckOut = new Date(reservation.checkOut).toLocaleDateString();
+    const transporter = getTransporter();
+    const resetUrl = getAppUrl(`/reset-password?token=${token}`);
 
     const mailOptions = {
-      from: `"Hotel Booking" <${account.user}>`,
-      to: reservation.to,
-      subject: 'Your Hotel Reservation Confirmation',
+      from: process.env.SMTP_FROM || '"BGH Support" <support@bgh.com>',
+      to,
+      subject: 'Reset Your Password - Best Garden Hotel',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Reservation Confirmation</h2>
-          <p>Dear ${reservation.name},</p>
-          <p>Thank you for choosing our hotel. Your reservation has been confirmed.</p>
-          
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="color: #2c3e50; margin-top: 0;">Reservation Details</h3>
-            <p><strong>Reservation ID:</strong> ${reservation.reservationId}</p>
-            <p><strong>Room Type:</strong> ${reservation.roomType}</p>
-            <p><strong>Check-in:</strong> ${formattedCheckIn}</p>
-            <p><strong>Check-out:</strong> ${formattedCheckOut}</p>
-            <p><strong>Number of Guests:</strong> ${reservation.guests}</p>
-            <p><strong>Total Price:</strong> $${reservation.totalPrice.toFixed(2)}</p>
-            ${reservation.specialRequests ? `<p><strong>Special Requests:</strong> ${reservation.specialRequests}</p>` : ''}
+          <h2 style="color: #1a2b3b;">Password Reset Request</h2>
+          <p>Hello ${name},</p>
+          <p>We received a request to reset your password. Click the button below to create a new password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #1a2b3b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
           </div>
-
-          <p>If you have any questions or need to modify your reservation, please don't hesitate to contact us.</p>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-            <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply directly to this email.</p>
-          </div>
+          <p>If the button doesn't work, you can also copy and paste this link into your browser:</p>
+          <p><a href="${resetUrl}">${resetUrl}</a></p>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you did not request a password reset, please ignore this email or contact us if you have concerns.</p>
+          <p>Best regards,<br>The Best Garden Hotel Team</p>
         </div>
       `
     };
 
     const info = await transporter.sendMail(mailOptions);
-    
-    return {
-      success: true,
-      messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: account.user,
-      etherealPass: account.pass
-    };
-  } catch (error) {
-    console.error('Error sending reservation email:', error);
-    throw error;
-  }
-};
-
-// Send password reset email
-export const sendPasswordResetEmail = async ({ to, token, name }) => {
-  try {
-    const transporter = await createTransporter();
-    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password/${token}`;
-
-    const info = await transporter.sendMail({
-      from: '"BGH Support" <support@bgh-hotel.com>',
-      to,
-      subject: 'Reset Your Password - Best Garden Hotel',
-      html: getPasswordResetTemplate({
-        name,
-        resetUrl
-      })
-    });
 
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
+      previewUrl: nodemailer.getTestMessageUrl(info)
     };
   } catch (error) {
     console.error('Error sending password reset email:', error);
@@ -195,63 +168,78 @@ export const sendPasswordResetEmail = async ({ to, token, name }) => {
   }
 };
 
-export async function sendCancellationEmail({ 
-  email, 
-  reservationId, 
-  roomType, 
-  checkIn, 
-  checkOut, 
-  reason,
-  guestName 
-}) {
-  const transporter = await createTransporter();
-  const checkInDate = new Date(checkIn).toLocaleDateString();
-  const checkOutDate = new Date(checkOut).toLocaleDateString();
-
-  const mailOptions = {
-    from: '"Hotel Booking" <booking@hotel.com>',
-    to: email,
-    subject: `Reservation Cancellation Confirmation - ${reservationId}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1a1a1a;">Reservation Cancellation Confirmation</h2>
-        
-        <p>Dear ${guestName},</p>
-        
-        <p>This email confirms that your reservation has been cancelled as requested.</p>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
-          <h3 style="margin-top: 0;">Reservation Details:</h3>
-          <p><strong>Reservation ID:</strong> ${reservationId}</p>
-          <p><strong>Room Type:</strong> ${roomType}</p>
-          <p><strong>Check-in Date:</strong> ${checkInDate}</p>
-          <p><strong>Check-out Date:</strong> ${checkOutDate}</p>
-          <p><strong>Cancellation Reason:</strong> ${reason}</p>
-        </div>
-        
-        <p>If you did not request this cancellation or have any questions, please contact our support team immediately.</p>
-        
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-          <p style="color: #666;">Best regards,<br>Hotel Team</p>
-        </div>
-      </div>
-    `
-  };
-
+// Send reservation confirmation email
+export const sendReservationConfirmationEmail = async ({ to, name, bookingDetails }) => {
   try {
+    const transporter = getTransporter();
+    const bookingUrl = getAppUrl(`/my-reservations`);
+    const { bookingId, roomType, checkInDate, checkOutDate, totalPrice } = bookingDetails;
+
+    const formattedCheckIn = new Date(checkInDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const formattedCheckOut = new Date(checkOutDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"BGH Reservations" <reservations@bgh.com>',
+      to,
+      subject: 'Your Reservation Confirmation - Best Garden Hotel',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a2b3b;">Your Reservation is Confirmed!</h2>
+          <p>Hello ${name},</p>
+          <p>Thank you for choosing Best Garden Hotel for your upcoming stay. Your reservation has been confirmed.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px;">
+            <h3 style="color: #1a2b3b; margin-top: 0;">Booking Details</h3>
+            <p><strong>Booking Reference:</strong> ${bookingId}</p>
+            <p><strong>Room Type:</strong> ${roomType}</p>
+            <p><strong>Check-in:</strong> ${formattedCheckIn} (from 3:00 PM)</p>
+            <p><strong>Check-out:</strong> ${formattedCheckOut} (until 12:00 PM)</p>
+            <p><strong>Total Amount:</strong> ${totalPrice.toFixed(2)}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${bookingUrl}" style="background-color: #1a2b3b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Your Reservation</a>
+          </div>
+          
+          <h3 style="color: #1a2b3b;">Important Information</h3>
+          <ul>
+            <li>Check-in time is from 3:00 PM. Early check-in may be available upon request.</li>
+            <li>Check-out time is until 12:00 PM. Late check-out may incur additional charges.</li>
+            <li>Please present a valid ID and the credit card used for booking upon check-in.</li>
+            <li>Free Wi-Fi is available throughout the hotel.</li>
+            <li>Breakfast is served from 6:30 AM to 10:30 AM in our dining area.</li>
+          </ul>
+          
+          <p>If you need to modify or cancel your reservation, please visit your account on our website or contact us directly.</p>
+          <p>We look forward to welcoming you to Best Garden Hotel!</p>
+          <p>Best regards,<br>The Best Garden Hotel Team</p>
+        </div>
+      `
+    };
+
     const info = await transporter.sendMail(mailOptions);
+
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info),
-      etherealUser: testAccount.user,
-      etherealPass: testAccount.pass
+      previewUrl: nodemailer.getTestMessageUrl(info)
     };
   } catch (error) {
-    console.error('Failed to send cancellation email:', error);
+    console.error('Error sending reservation confirmation email:', error);
     return {
       success: false,
       error: error.message
     };
   }
-} 
+};

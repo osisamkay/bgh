@@ -1,0 +1,56 @@
+import { verifyRefreshToken, generateAccessToken } from '@/utils/auth';
+
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({
+            success: false,
+            message: 'Method not allowed'
+        });
+    }
+
+    try {
+        // Get refresh token from cookie in production or request body in development
+        let refreshToken;
+
+        if (process.env.NODE_ENV === 'production') {
+            // Get token from cookie
+            const cookies = req.cookies;
+            refreshToken = cookies.refreshToken;
+        } else {
+            // Get token from request body
+            refreshToken = req.body.refreshToken;
+        }
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: 'Refresh token required'
+            });
+        }
+
+        // Verify refresh token
+        const user = await verifyRefreshToken(refreshToken);
+
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid or expired refresh token'
+            });
+        }
+
+        // Generate new access token
+        const accessToken = generateAccessToken(user);
+
+        // Return new access token
+        return res.status(200).json({
+            success: true,
+            token: accessToken
+        });
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to refresh token'
+        });
+    }
+}

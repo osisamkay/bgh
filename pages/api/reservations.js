@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { sendReservationEmail } from '../../utils/emailService';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       if (!numberOfGuests) missingFields.push('Number of Guests');
 
       if (missingFields.length > 0) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Missing required fields',
           details: `Please provide: ${missingFields.join(', ')}`
         });
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Invalid email format',
           details: 'Please enter a valid email address'
         });
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       // Validate phone number format
       const phoneRegex = /^\+?[\d\s-]{10,}$/;
       if (!phoneRegex.test(phone)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Invalid phone number format',
           details: 'Please enter a valid phone number with at least 10 digits'
         });
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
       });
 
       if (!room) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: 'Room not found',
           details: 'The selected room is no longer available'
         });
@@ -177,14 +177,14 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.error('Reservation error:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Internal server error',
         details: 'An unexpected error occurred. Please try again later.'
       });
     }
   }
 
-  return res.status(405).json({ 
+  return res.status(405).json({
     error: 'Method not allowed',
     details: 'Only GET and POST requests are allowed'
   });

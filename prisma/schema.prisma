@@ -39,8 +39,21 @@ model User {
     scheduledReports   ScheduledReport[]
     notifications      Notification[]
     verificationTokens VerificationToken[]
+    ResetPasswordToken ResetPasswordToken?
 
     @@index([email])
+    @@index([role])
+    @@index([emailVerified])
+}
+
+model ResetPasswordToken {
+    id        String   @id @default(cuid())
+    userId    String   @unique
+    token     String
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id])
 }
 
 model Notification {
@@ -194,7 +207,10 @@ model Booking {
     notifications   Notification[]
     disputes        ChargeDispute[]
 
+    @@index([status])
+    @@index([checkInDate, checkOutDate])
     @@index([userId])
+    @@index([roomId])
 }
 
 model ReportFilter {

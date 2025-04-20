@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { sendEmail } from '@/utils/email';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';

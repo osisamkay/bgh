@@ -1,5 +1,7 @@
-import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+// pages/api/auth/verify-email.js
+import prisma from '@/lib/prisma';
+import { generateAccessToken, generateRefreshToken } from '@/utils/auth';
+import { sendWelcomeEmail } from '@/utils/emailService';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -52,7 +54,7 @@ export default async function handler(req, res) {
 
       return res.status(400).json({
         success: false,
-        message: 'Email is already verified'
+        message: 'Email is already verified. Please log in.'
       });
     }
 
@@ -70,30 +72,57 @@ export default async function handler(req, res) {
       where: { userId: verificationToken.userId }
     });
 
-    // Generate JWT token for automatic login
-    const jwtToken = jwt.sign(
-      {
-        userId: updatedUser.id,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        emailVerified: true
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate new tokens for automatic login
+    const accessToken = generateAccessToken(updatedUser);
+    const refreshToken = generateRefreshToken(updatedUser.id);
 
-    return res.status(200).json({
-      success: true,
-      message: 'Email verified successfully! You can now log in.',
-      token: jwtToken,
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        emailVerified: true
-      }
-    });
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        to: updatedUser.email,
+        name: `${updatedUser.firstName} ${updatedUser.lastName}`
+      });
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Continue with verification success even if welcome email fails
+    }
+
+    // Set secure cookie for refresh token in production
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Set-Cookie', [
+        `refreshToken=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Email verified successfully! You are now logged in.',
+        token: accessToken,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          emailVerified: true
+        }
+      });
+    } else {
+      // In development, include refresh token in response
+      return res.status(200).json({
+        success: true,
+        message: 'Email verified successfully! You are now logged in.',
+        token: accessToken,
+        refreshToken: refreshToken,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          emailVerified: true
+        }
+      });
+    }
   } catch (error) {
     console.error('Email verification error:', error);
     return res.status(500).json({
@@ -101,4 +130,4 @@ export default async function handler(req, res) {
       message: 'An error occurred during email verification. Please try again.'
     });
   }
-} 
+}

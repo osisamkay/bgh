@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { sendEmail } from '@/utils/email';
 import { RefundService } from '@/utils/refundService';
 import { verifyToken } from '@/utils/auth';
@@ -63,8 +63,8 @@ export default async function handler(req, res) {
             type: reservation.room.type || 'Unknown',
             price: reservation.room.price || 0,
             description: reservation.room.description || '',
-            amenities: Array.isArray(reservation.room.amenities) 
-              ? reservation.room.amenities 
+            amenities: Array.isArray(reservation.room.amenities)
+              ? reservation.room.amenities
               : typeof reservation.room.amenities === 'string'
                 ? JSON.parse(reservation.room.amenities)
                 : [],
@@ -303,9 +303,9 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error(`Error in ${req.method} reservation:`, error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      details: error.message 
+      details: error.message
     });
   }
 }

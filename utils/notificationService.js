@@ -1,5 +1,5 @@
 import { sendEmail } from './email';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 5000; // 5 seconds
@@ -91,7 +91,7 @@ export class NotificationService {
 
   static async _sendEmailNotification(notification, user) {
     const emailContent = this._generateEmailContent(notification);
-    
+
     await sendEmail({
       to: user.email,
       subject: 'Booking Cancellation Confirmation',
@@ -101,7 +101,7 @@ export class NotificationService {
 
   static _generateEmailContent(notification) {
     const data = JSON.parse(notification.data);
-    
+
     return `
       <h2>Booking Cancellation Confirmation</h2>
       <p>Dear ${user.name},</p>
