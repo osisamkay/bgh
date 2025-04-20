@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
     provider = "sqlite"
-    url      = "file:./dev.db"
+    url      = env("DATABASE_URL")
 }
 
 model User {
@@ -18,14 +18,16 @@ model User {
     emailVerifiedAt    DateTime?
     password           String
     role               String
-    firstName          String
-    lastName           String
+    firstName          String?
+    lastName           String?
     streetAddress      String
     city               String
     postalCode         String
     province           String
     country            String
     termsAccepted      Boolean
+    phone              String?
+    customerId         String?             @unique
     createdAt          DateTime            @default(now())
     updatedAt          DateTime            @updatedAt
     bookings           Booking[]
@@ -37,10 +39,6 @@ model User {
     scheduledReports   ScheduledReport[]
     notifications      Notification[]
     verificationTokens VerificationToken[]
-    phone              String?
-    address            String?
-    state              String?
-    zipCode            String?
 
     @@index([email])
 }

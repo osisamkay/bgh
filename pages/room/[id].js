@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 export default function RoomDetails() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function RoomDetails() {
     guests: 1
   });
   const { user } = useAuth();
+  const { addNotification } = useNotification();
 
   const { checkIn, checkOut, guests } = router.query;
 
@@ -81,10 +83,10 @@ export default function RoomDetails() {
     });
   };
 
-  const handleBook = () => {
+  const handleBook = async () => {
     // Booking requires login
     if (!user) {
-      const returnUrl = `/reserve/${id}?${new URLSearchParams({
+      const returnUrl = `/payment/${id}?${new URLSearchParams({
         checkIn: searchParams.checkIn,
         checkOut: searchParams.checkOut,
         guests: searchParams.guests
@@ -97,16 +99,59 @@ export default function RoomDetails() {
       return;
     }
 
-    // If user is logged in, proceed to booking
-    router.push({
-      pathname: `/reserve/${id}`,
-      query: {
-        checkIn: searchParams.checkIn,
-        checkOut: searchParams.checkOut,
-        guests: searchParams.guests,
-        booking: true // Flag to indicate this is a booking, not just a reservation
+    // Validate required fields
+    if (!user.phone) {
+      addNotification('Please update your phone number in your profile before booking', 'error');
+      router.push('/profile');
+      return;
+    }
+
+    if (!searchParams.checkIn || !searchParams.checkOut) {
+      addNotification('Please select check-in and check-out dates', 'error');
+      handleChangeSelection(); // Redirect to search page to select dates
+      return;
+    }
+
+    try {
+      // Create a reservation first
+      const response = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          roomId: id, // Make sure to use roomId instead of id
+          checkInDate: searchParams.checkIn,
+          checkOutDate: searchParams.checkOut,
+          numberOfGuests: parseInt(searchParams.guests) || 1,
+          specialRequests: '',
+          termsAccepted: true,
+          fullName: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          phone: user.phone
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create reservation');
       }
-    });
+
+      // If reservation is created successfully, redirect to payment page
+      router.push({
+        pathname: `/payment/${data.reservation.id}`,
+        query: {
+          checkIn: searchParams.checkIn,
+          checkOut: searchParams.checkOut,
+          guests: searchParams.guests
+        }
+      });
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      addNotification(error.message || 'Failed to create reservation', 'error');
+    }
   };
 
   if (isLoading || !room) {

@@ -9,6 +9,7 @@ const UserMenu = () => {
 
   console.log(user)
 
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -44,7 +45,7 @@ const UserMenu = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           <span className="text-xs sm:text-sm font-medium">
-           Hello, {user.firstName} {user.lastName}
+            Hello, {user.firstName} {user.lastName}
           </span>
         </div>
         <svg
@@ -62,7 +63,7 @@ const UserMenu = () => {
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
           <div className="py-1" role="menu" aria-orientation="vertical">
             <Link
-              href="/my-account"
+              href="/profile"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               role="menuitem"
               onClick={() => setIsOpen(false)}
@@ -76,6 +77,14 @@ const UserMenu = () => {
               onClick={() => setIsOpen(false)}
             >
               My Reservations
+            </Link>
+            <Link
+              href="/my-reservations"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+            >
+              My Bookings
             </Link>
             <Link
               href="/settings"

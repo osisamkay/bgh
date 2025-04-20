@@ -219,6 +219,13 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...updatedUserData
+    }));
+  };
+
   const value = {
     user,
     loading,
@@ -226,7 +233,8 @@ export function AuthProvider({ children }) {
     login,
     logout,
     verifyEmail,
-    resetPassword
+    resetPassword,
+    updateUser
   };
 
   if (!mounted) {
