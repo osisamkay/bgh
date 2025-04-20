@@ -1,9 +1,7 @@
 import { Providers } from '../contexts/Providers';
 import '../styles/globals.css';
 import Layout from '../components/Layout';
-import { AuthProvider } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
-import { NotificationProvider } from '../contexts/NotificationContext';
 import 'react-notifications/lib/notifications.css';
 
 export default function MyApp({ Component, pageProps }) {
@@ -14,17 +12,13 @@ export default function MyApp({ Component, pageProps }) {
   return (
     <Providers session={pageProps.session}>
       <LanguageProvider>
-        <NotificationProvider>
-          <AuthProvider>
-            {shouldUseLayout ? (
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
-            ) : (
-              <Component {...pageProps} />
-            )}
-          </AuthProvider>
-        </NotificationProvider>
+        {shouldUseLayout ? (
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        ) : (
+          <Component {...pageProps} />
+        )}
       </LanguageProvider>
     </Providers>
   );

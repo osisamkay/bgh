@@ -10,35 +10,38 @@ export default function MyReservations() {
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const [reservations, setReservations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect if not logged in
     if (!user) {
       router.push('/login');
       return;
     }
+
+    // Fetch user's reservations
     fetchReservations();
   }, [user]);
 
   const fetchReservations = async () => {
     try {
-      const response = await fetch('/api/reservations/user', {
+      const response = await fetch('/api/reservations/my-reservations', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch reservations');
       }
 
       const data = await response.json();
-      setReservations(data);
+      setReservations(data.reservations);
     } catch (error) {
       console.error('Error fetching reservations:', error);
       addNotification('Failed to load reservations', 'error');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -76,94 +79,88 @@ export default function MyReservations() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (!user) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 py-8">
       <Head>
         <title>My Reservations - Best Garden Hotel</title>
-        <meta name="description" content="View and manage your reservations at Best Garden Hotel" />
+        <meta name="description" content="View your reservations at Best Garden Hotel" />
       </Head>
 
-      
-
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">My Reservations</h1>
 
-        {reservations.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          </div>
+        ) : reservations.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-600">You don't have any reservations yet.</p>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">No Reservations Found</h2>
+            <p className="text-gray-600 mb-4">You haven't made any reservations yet.</p>
             <button
-              onClick={() => router.push('/')}
-              className="mt-4 px-6 py-2 bg-[#1a2b3b] text-white rounded hover:bg-[#2c3e50] transition-colors"
+              onClick={() => router.push('/rooms')}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
             >
-              Make a Reservation
+              Browse Rooms
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {reservations.map((reservation) => (
-              <div key={reservation.id} className="bg-white rounded-lg shadow p-6">
-                <div className="flex flex-wrap justify-between items-start gap-4">
-                  <div className="space-y-2">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {reservation.roomType}
-                    </h2>
-                    <div className="flex items-center space-x-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(reservation.status)}`}>
-                        {reservation.status}
-                      </span>
-                      <span className="text-gray-600">
-                        Reservation ID: {reservation.id}
-                      </span>
+              <div key={reservation.id} className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{reservation.room.name}</h3>
+                      <p className="text-sm text-gray-600">{reservation.room.type}</p>
                     </div>
-                    <div className="text-gray-600">
-                      <p>Check-in: {new Date(reservation.checkIn).toLocaleDateString()}</p>
-                      <p>Check-out: {new Date(reservation.checkOut).toLocaleDateString()}</p>
-                      <p>Guests: {reservation.guests}</p>
-                    </div>
+                    <span className={`px-2 py-1 rounded text-sm ${reservation.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                        reservation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                      }`}>
+                      {reservation.status}
+                    </span>
                   </div>
 
-                  <div className="flex space-x-4">
-                    <button
-                      onClick={() => router.push(`/reservation-confirmation/${reservation.id}`)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                    >
-                      View Details
-                    </button>
-                    {reservation.status !== 'cancelled' && (
-                      <button
-                        onClick={() => handleCancelReservation(reservation.id)}
-                        className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    )}
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">Check-in:</span>{' '}
+                      {new Date(reservation.checkIn).toLocaleDateString()}
+                    </p>
+                    <p>
+                      <span className="font-medium">Check-out:</span>{' '}
+                      {new Date(reservation.checkOut).toLocaleDateString()}
+                    </p>
+                    <p>
+                      <span className="font-medium">Guests:</span>{' '}
+                      {reservation.numberOfGuests}
+                    </p>
+                    <p>
+                      <span className="font-medium">Total:</span>{' '}
+                      ${reservation.totalPrice.toFixed(2)}
+                    </p>
                   </div>
+
+                  {reservation.status === 'CONFIRMED' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => router.push(`/reservations/${reservation.id}`)}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </main>
-
-      
     </div>
   );
 } 

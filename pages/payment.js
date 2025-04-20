@@ -18,20 +18,24 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 const Payment = () => {
   const router = useRouter();
+  const { reservationId } = router.query;
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(false);
   const [customerInfo, setCustomerInfo] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    confirmEmail: user?.email || '',
-    streetAddress: user?.streetAddress || '',
-    province: user?.province || '',
-    postalCode: user?.postalCode || '',
-    country: user?.country || '',
-    phone: user?.phone || ''
+    firstName: '',
+    lastName: '',
+    email: '',
+    confirmEmail: '',
+    streetAddress: '',
+    province: '',
+    postalCode: '',
+    country: '',
+    phone: ''
   });
 
   const [billingInfo, setBillingInfo] = useState({
@@ -58,34 +62,31 @@ const Payment = () => {
 
   const [bookingDetails, setBookingDetails] = useState({
     checkIn: {
-      date: 'Tuesday',
-      day: '08',
-      month: 'JULY',
-      year: '2025',
-      time: '4:00 PM'
+      date: '',
+      day: '',
+      month: '',
+      year: '',
+      time: ''
     },
     checkOut: {
-      date: 'Thursday',
-      day: '17',
-      month: 'JULY',
-      year: '2025',
-      time: '11:00 PM'
+      date: '',
+      day: '',
+      month: '',
+      year: '',
+      time: ''
     },
     room: {
-      type: 'DELUXE KING SUITE',
-      guests: '2 ADULTS',
-      amenities: [
-        'Wi-Fi', 'Breakfast', 'Free parking', 'Swimming pool',
-        'Non-smoking', 'Microwave', 'Refrigerator', 'In-Room safe'
-      ],
-      images: ['/room1.jpg', '/room2.jpg', '/room3.jpg', '/room4.jpg']
+      type: '',
+      guests: '',
+      amenities: [],
+      images: []
     },
     pricing: {
-      basePrice: 2500.87,
-      seniorDiscount: 125.04,
-      taxes: 308.85,
-      serviceCharge: 47.52,
-      total: 2732.20
+      basePrice: 0,
+      seniorDiscount: 0,
+      taxes: 0,
+      serviceCharge: 0,
+      total: 0
     }
   });
 
@@ -93,7 +94,8 @@ const Payment = () => {
 
   useEffect(() => {
     if (user) {
-      setCustomerInfo({
+      setCustomerInfo(prev => ({
+        ...prev,
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
@@ -103,38 +105,98 @@ const Payment = () => {
         postalCode: user.postalCode || '',
         country: user.country || '',
         phone: user.phone || ''
-      });
+      }));
     }
   }, [user]);
 
   useEffect(() => {
-    // Fetch booking details when component mounts
-    async function fetchBookingDetails() {
+    async function fetchReservationDetails() {
+      if (!reservationId) return;
+
       try {
-        const response = await fetch(`/api/bookings/${router.query.bookingId}`);
+        setIsLoading(true);
+        const response = await fetch(`/api/reservations/${reservationId}`);
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch booking details');
+          throw new Error(data.error || 'Failed to fetch reservation details');
         }
 
-        // Verify booking hasn't been paid already
-        if (data.payment && data.payment.status === 'completed') {
-          router.push('/booking-confirmation');
-          return;
+        // Format dates
+        const checkInDate = new Date(data.checkInDate);
+        const checkOutDate = new Date(data.checkOutDate);
+
+        // Calculate pricing
+        const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        const basePrice = data.room.price * nights;
+        const taxes = basePrice * 0.13; // 13% tax
+        const serviceCharge = basePrice * 0.02; // 2% service charge
+        const seniorDiscount = user?.age >= 65 ? basePrice * 0.05 : 0; // 5% senior discount
+        const total = basePrice + taxes + serviceCharge - seniorDiscount;
+
+        setBookingDetails({
+          checkIn: {
+            date: checkInDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            day: checkInDate.getDate().toString().padStart(2, '0'),
+            month: checkInDate.toLocaleString('en-US', { month: 'long' }).toUpperCase(),
+            year: checkInDate.getFullYear().toString(),
+            time: '4:00 PM'
+          },
+          checkOut: {
+            date: checkOutDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            day: checkOutDate.getDate().toString().padStart(2, '0'),
+            month: checkOutDate.toLocaleString('en-US', { month: 'long' }).toUpperCase(),
+            year: checkOutDate.getFullYear().toString(),
+            time: '11:00 AM'
+          },
+          room: {
+            type: data.room.type.toUpperCase(),
+            guests: `${data.numberOfGuests} ${data.numberOfGuests > 1 ? 'ADULTS' : 'ADULT'}`,
+            amenities: data.room.amenities || [],
+            images: data.room.images || []
+          },
+          pricing: {
+            basePrice: parseFloat(basePrice.toFixed(2)),
+            seniorDiscount: parseFloat(seniorDiscount.toFixed(2)),
+            taxes: parseFloat(taxes.toFixed(2)),
+            serviceCharge: parseFloat(serviceCharge.toFixed(2)),
+            total: parseFloat(total.toFixed(2))
+          }
+        });
+
+        // Pre-fill customer info if available from reservation
+        if (data.user) {
+          setCustomerInfo(prev => ({
+            ...prev,
+            firstName: data.user.firstName || prev.firstName,
+            lastName: data.user.lastName || prev.lastName,
+            email: data.user.email || prev.email,
+            confirmEmail: data.user.email || prev.confirmEmail,
+            streetAddress: data.user.streetAddress || prev.streetAddress,
+            province: data.user.province || prev.province,
+            postalCode: data.user.postalCode || prev.postalCode,
+            country: data.user.country || prev.country,
+            phone: data.user.phone || prev.phone
+          }));
         }
 
-        setBookingDetails(data);
+        setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching booking details:', error);
+        console.error('Error fetching reservation details:', error);
+        addNotification('Failed to load reservation details', 'error');
         router.push('/error');
       }
     }
 
-    if (router.query.bookingId) {
-      fetchBookingDetails();
+    fetchReservationDetails();
+  }, [reservationId, user, router, addNotification]);
+
+  useEffect(() => {
+    // Check if user is logged in and email is not verified
+    if (user && !user.emailVerified) {
+      setIsVerifyingEmail(true);
     }
-  }, [router.query.bookingId]);
+  }, [user]);
 
   const handleCustomerInfoChange = (e) => {
     const { name, value } = e.target;
@@ -172,13 +234,13 @@ const Payment = () => {
   };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? bookingDetails.room.images.length - 1 : prev - 1
     );
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === bookingDetails.room.images.length - 1 ? 0 : prev + 1
     );
   };
@@ -191,13 +253,52 @@ const Payment = () => {
     }));
   };
 
+  const handleResendVerification = async () => {
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: user.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email');
+      }
+
+      setVerificationEmailSent(true);
+      addNotification('Verification email sent. Please check your inbox.', 'success');
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      addNotification('Failed to send verification email. Please try again.', 'error');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if user is logged in and email is verified
+    if (!user) {
+      addNotification('Please log in to continue with payment', 'error');
+      router.push('/login');
+      return;
+    }
+
+    if (!user.emailVerified) {
+      setIsVerifyingEmail(true);
+      addNotification('Please verify your email before proceeding with payment', 'warning');
+      return;
+    }
+
     if (!formData.agreeToCancellation || !formData.agreeToTerms) {
       addNotification('Please agree to all terms and conditions', 'error');
       return;
     }
-    // Add payment processing logic here
+
+    // Continue with payment processing...
   };
 
   const toggleEdit = () => {
@@ -209,17 +310,63 @@ const Payment = () => {
 
   const handlePaymentComplete = async (paymentResult) => {
     setPaymentStatus('success');
-    
+
     // Redirect to confirmation page after a short delay
     setTimeout(() => {
       router.push(`/booking-confirmation?id=${bookingDetails.id}`);
     }, 2000);
   };
 
-  if (!bookingDetails) {
+  if (isVerifyingEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="bg-yellow-100 rounded-full p-3 inline-block mb-4">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Email Verification Required</h2>
+            <p className="text-gray-600 mb-6">
+              Please verify your email address before proceeding with payment.
+              {!verificationEmailSent && " If you haven't received the verification email, you can request a new one."}
+            </p>
+
+            {verificationEmailSent ? (
+              <div className="text-green-600 mb-6">
+                <p>Verification email sent! Please check your inbox.</p>
+                <p className="text-sm mt-2">
+                  After verifying your email, please refresh this page.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleResendVerification}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Resend Verification Email
+              </button>
+            )}
+
+            <div className="mt-6 pt-6 border-t">
+              <button
+                onClick={() => router.back()}
+                className="text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                &larr; Return to Previous Page
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -228,17 +375,18 @@ const Payment = () => {
     <div className="min-h-screen bg-[#F5F4F0]">
       <Head>
         <title>Payment - Best Garden Hotel</title>
+        <meta name="description" content="Complete your booking payment" />
       </Head>
 
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">BOOKING SUMMARY</h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
             <div className="mb-8">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">CUSTOMER INFORMATION</h2>
-                <button 
+                <button
                   onClick={toggleEdit}
                   className="text-blue-600 hover:text-blue-800"
                 >
@@ -563,9 +711,8 @@ const Payment = () => {
                 {bookingDetails.room.images.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-gray-400 hover:bg-gray-300'
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-gray-400 hover:bg-gray-300'
+                      }`}
                     onClick={() => setCurrentImageIndex(index)}
                     aria-label={`Go to image ${index + 1}`}
                   />

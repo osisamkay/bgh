@@ -16,6 +16,7 @@ export default function Login() {
     password: '',
     rememberMe: false
   });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -27,19 +28,19 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setLoading(true);
+
     try {
-      const result = await login(formData.email, formData.password, formData.rememberMe);
-      
-      if (result.success) {
-        addNotification(result.message, 'success');
-        router.push('/');
-      } else {
+      const result = await login(formData.email, formData.password);
+
+      if (!result.success) {
         addNotification(result.message, 'error');
       }
     } catch (error) {
       console.error('Login error:', error);
       addNotification('An unexpected error occurred', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,10 +51,8 @@ export default function Login() {
         <meta name="description" content="Login to your BGH account" />
       </Head>
 
-      
-
       <main className="container mx-auto px-4 py-8">
-        <div className=" mx-auto flex flex-col md:flex-row gap-12">
+        <div className="mx-auto flex flex-col md:flex-row gap-12">
           {/* Left Column - Login Form */}
           <div className="w-full md:w-1/2">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">PLEASE LOG IN.</h1>
@@ -104,9 +103,10 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="w-full bg-[#1a2b3b] text-white py-3 px-4 rounded-md hover:bg-[#2c3e50] transition-colors"
+                disabled={loading}
+                className="w-full bg-[#1a2b3b] text-white py-3 px-4 rounded-md hover:bg-[#2c3e50] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                LOGIN
+                {loading ? 'SIGNING IN...' : 'LOGIN'}
               </button>
 
               <div className="mt-4">
@@ -121,7 +121,7 @@ export default function Login() {
           {/* Right Column - Create Account */}
           <div className="w-full md:w-1/2 md:border-l md:pl-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">NOT A BGH™ MEMBER ?</h2>
-            
+
             <div className="space-y-4 mb-8">
               <p className="text-gray-700">
                 Experience luxury the way it should be: personal, rewarding, and tailored just for you.
@@ -145,7 +145,7 @@ export default function Login() {
         </div>
       </main>
 
-      
+
     </div>
   );
 }

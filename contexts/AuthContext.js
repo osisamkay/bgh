@@ -20,13 +20,13 @@ export function AuthProvider({ children }) {
   const { addNotification } = useNotification();
 
   useEffect(() => {
+    setMounted(true);
     // Check for stored auth token on mount
     const token = localStorage.getItem('auth_token');
     if (token) {
       // Validate token and get user data
       validateToken(token);
     } else {
-      setMounted(true);
       setLoading(false);
     }
   }, []);
@@ -119,9 +119,24 @@ export function AuthProvider({ children }) {
         };
       }
 
+      // Store token and user data
       localStorage.setItem('auth_token', data.token);
       setUser(data.user);
+
+      // Check if email is verified
+      if (!data.user.emailVerified) {
+        addNotification('Please verify your email to continue', 'warning');
+        router.push('/verify-email');
+        return {
+          success: true,
+          requiresVerification: true,
+          message: 'Login successful but email verification required'
+        };
+      }
+
+      // Email is verified
       addNotification('Login successful', 'success');
+      router.push('/');
       return {
         success: true,
         message: 'Login successful'
@@ -214,14 +229,13 @@ export function AuthProvider({ children }) {
     resetPassword
   };
 
-  // Don't render anything until mounted to prevent hydration issues
   if (!mounted) {
     return null;
   }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 } 

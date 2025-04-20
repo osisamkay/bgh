@@ -1,65 +1,77 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(req) {
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
     }
 
     const token = authHeader.split(' ')[1];
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Find user in database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        emailVerified: true
+      }
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
-    if (!user.isVerified) {
-      return NextResponse.json(
-        { error: 'Email not verified' },
-        { status: 401 }
-      );
-    }
-
-    // Return user data without password
-    const { password, ...userWithoutPassword } = user;
-    return NextResponse.json({
+    // Return user data
+    return res.status(200).json({
       success: true,
-      user: userWithoutPassword
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role || 'user',
+        emailVerified: user.emailVerified || false
+      }
     });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
     }
     if (error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        { error: 'Token expired' },
-        { status: 401 }
-      );
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired'
+      });
     }
-    
+
     console.error('Token validation error:', error);
-    return NextResponse.json(
-      { error: 'Error validating token' },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      success: false,
+      message: 'Error validating token'
+    });
   }
 } 
