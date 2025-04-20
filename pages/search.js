@@ -27,10 +27,10 @@ const calculateNights = (checkIn, checkOut) => {
 
 export default function Search() {
   const router = useRouter();
-  
+
   // State for filter and sort options
-  const [checkInDate, setCheckInDate] = useState('4/15/2025');
-  const [checkOutDate, setCheckOutDate] = useState('04/16/2025');
+  const [checkInDate, setCheckInDate] = useState(formatDateForDisplay(Date.now()));
+  const [checkOutDate, setCheckOutDate] = useState(formatDateForDisplay(Date.now() + 1000 * 60 * 60 * 24));
   const [rooms, setRooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [ratePreference, setRatePreference] = useState('Best Available ***');
@@ -64,11 +64,11 @@ export default function Search() {
         const data = await response.json();
         setAllRooms(data);
         setFilteredRooms(data);
-        
+
         // Set max price from fetched rooms
         const maxPrice = Math.max(...data.map(room => room.price));
         setPriceRange([0, maxPrice]);
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -129,15 +129,15 @@ export default function Search() {
 
     // Filter by amenities if any selected
     if (selectedAmenities.length > 0) {
-      results = results.filter(room => 
-        selectedAmenities.every(amenity => 
+      results = results.filter(room =>
+        selectedAmenities.every(amenity =>
           room.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))
         )
       );
     }
 
     // Filter by price range
-    results = results.filter(room => 
+    results = results.filter(room =>
       room.price >= priceRange[0] && room.price <= priceRange[1]
     );
 
@@ -158,7 +158,7 @@ export default function Search() {
         setShowDatePicker(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -252,7 +252,7 @@ export default function Search() {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setNotificationStatus('success');
         setEmail('');
@@ -275,13 +275,13 @@ export default function Search() {
   // Function to navigate images
   const handleImageNavigation = (direction) => {
     if (!selectedRoom) return;
-    
+
     if (direction === 'next') {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === selectedRoom.images.length - 1 ? 0 : prev + 1
       );
     } else {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === 0 ? selectedRoom.images.length - 1 : prev - 1
       );
     }
@@ -295,7 +295,7 @@ export default function Search() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      
+
 
       {/* Search Form - Styled to match the image */}
       <div className="bg-white py-4 border-b border-gray-200">
@@ -303,7 +303,7 @@ export default function Search() {
           <div className="flex flex-col" ref={datePickerRef}>
             <label className="text-sm text-gray-700 mb-1">Check-in-Date</label>
             <div className="relative">
-              <div 
+              <div
                 className="border border-gray-300 p-2 w-full bg-gray-100 rounded cursor-pointer"
                 onClick={() => setShowDatePicker(!showDatePicker)}
               >
@@ -315,8 +315,8 @@ export default function Search() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         value={formatDateForInput(checkInDate)}
                         onChange={handleCheckInChange}
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -324,15 +324,15 @@ export default function Search() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         value={formatDateForInput(checkOutDate)}
                         onChange={handleCheckOutChange}
                         className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <button 
+                      <button
                         onClick={() => setShowDatePicker(false)}
                         className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-medium"
                       >
@@ -344,7 +344,7 @@ export default function Search() {
               )}
             </div>
           </div>
-          
+
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Check-out-Date</label>
             <div className="relative">
@@ -353,12 +353,12 @@ export default function Search() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Rooms</label>
             <div className="relative">
-              <select 
-                value={rooms} 
+              <select
+                value={rooms}
                 onChange={(e) => setRooms(parseInt(e.target.value))}
                 className="border border-gray-300 p-2 w-full appearance-none bg-gray-100 rounded pr-8"
               >
@@ -374,12 +374,12 @@ export default function Search() {
               </span>
             </div>
           </div>
-          
+
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Guests</label>
             <div className="relative">
-              <select 
-                value={guests} 
+              <select
+                value={guests}
                 onChange={(e) => setGuests(parseInt(e.target.value))}
                 className="border border-gray-300 p-2 w-full appearance-none bg-gray-100 rounded pr-8"
               >
@@ -399,8 +399,8 @@ export default function Search() {
           <div className="flex flex-col">
             <label className="text-sm text-gray-700 mb-1">Rate Preference</label>
             <div className="relative">
-              <select 
-                value={ratePreference} 
+              <select
+                value={ratePreference}
                 onChange={(e) => setRatePreference(e.target.value)}
                 className="border border-gray-300 p-2 w-full appearance-none bg-gray-100 rounded pr-8"
               >
@@ -417,10 +417,10 @@ export default function Search() {
               </span>
             </div>
           </div>
-          
+
           <div className="flex flex-col justify-end">
             {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-            <button 
+            <button
               onClick={updateSearch}
               className="bg-gray-800 text-white px-6 py-2 rounded font-medium hover:bg-gray-700 transition-colors"
             >
@@ -429,14 +429,14 @@ export default function Search() {
           </div>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filter Section */}
           <div className="w-full md:w-1/4">
             <h2 className="text-xl font-bold mb-6">Filter</h2>
-            
+
             {/* Price Filter */}
             <div className="mb-6">
               <h3 className="font-semibold mb-4">Price Range</h3>
@@ -474,9 +474,9 @@ export default function Search() {
                     <div className="relative w-full h-full flex items-center">
                       {/* Background track */}
                       <div className="absolute w-full h-[10px] bg-gray-200 rounded-full"></div>
-                      
+
                       {/* Selected range */}
-                      <div 
+                      <div
                         className="absolute h-[10px] bg-[#d4af37] rounded-full"
                         style={{
                           left: `${(priceRange[0] / maxPrice) * 100}%`,
@@ -485,13 +485,13 @@ export default function Search() {
                       ></div>
 
                       {/* Price labels */}
-                      <div 
+                      <div
                         className="absolute text-[12px] bg-white px-2 py-1 rounded-full border border-gray-300 font-medium"
                         style={{ left: `${(priceRange[0] / maxPrice) * 100}%`, transform: 'translateX(-50%)' }}
                       >
                         ${priceRange[0]}
                       </div>
-                      <div 
+                      <div
                         className="absolute text-[12px] bg-white px-2 py-1 rounded-full border border-gray-300 font-bold"
                         style={{ left: `${(priceRange[1] / maxPrice) * 100}%`, transform: 'translateX(-50%)' }}
                       >
@@ -528,36 +528,36 @@ export default function Search() {
                 </div>
               </div>
             </div>
-            
+
             {/* Room Type Filter */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Room Type</h3>
               <div className="space-y-2">
                 {['Single', 'Twin', 'Deluxe', 'King'].map((type) => (
                   <div key={type} className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      id={`type-${type}`} 
+                    <input
+                      type="checkbox"
+                      id={`type-${type}`}
                       checked={selectedRoomTypes.includes(type.toLowerCase())}
                       onChange={() => toggleRoomType(type.toLowerCase())}
                       className="h-4 w-4 mr-2"
                     />
                     <label htmlFor={`type-${type}`} className="text-sm flex-grow">{type}</label>
-                    <Image   src="/images/play-svgrepo-com.svg" alt="arrow" width={10} height={10} />
+                    <Image src="/images/play-svgrepo-com.svg" alt="arrow" width={10} height={10} />
                   </div>
                 ))}
               </div>
             </div>
-            
+
             {/* Amenities Filter */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Amenities</h3>
               <div className="space-y-2">
                 {['Wi-Fi', 'Pool', 'Breakfast', 'Room Service'].map((amenity) => (
                   <div key={amenity} className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      id={`amenity-${amenity}`} 
+                    <input
+                      type="checkbox"
+                      id={`amenity-${amenity}`}
                       checked={selectedAmenities.includes(amenity.toLowerCase())}
                       onChange={() => toggleAmenity(amenity.toLowerCase())}
                       className="h-4 w-4 mr-2"
@@ -568,9 +568,9 @@ export default function Search() {
                 ))}
               </div>
             </div>
-            
+
             {/* Reset Filters Button */}
-            <button 
+            <button
               onClick={() => {
                 setSelectedRoomTypes([]);
                 setSelectedAmenities([]);
@@ -603,9 +603,8 @@ export default function Search() {
                 <button
                   type="submit"
                   disabled={isSubscribing}
-                  className={`w-full bg-[#d4af37] text-white py-2 px-4 rounded-md hover:bg-[#c4a137] transition-colors ${
-                    isSubscribing ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  className={`w-full bg-[#d4af37] text-white py-2 px-4 rounded-md hover:bg-[#c4a137] transition-colors ${isSubscribing ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
                   {isSubscribing ? 'Subscribing...' : 'Get Price Alerts'}
                 </button>
@@ -622,7 +621,7 @@ export default function Search() {
               </form>
             </div>
           </div>
-          
+
           {/* Results Section */}
           <div className="w-full md:w-3/4">
             {/* Sort Options */}
@@ -633,7 +632,7 @@ export default function Search() {
               <div className="flex items-center">
                 <span className="mr-2 text-sm">Sort by</span>
                 <div className="relative">
-                  <select 
+                  <select
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
                     className="border border-gray-300 rounded p-1 pl-2 pr-8 appearance-none"
@@ -649,7 +648,7 @@ export default function Search() {
                 </div>
               </div>
             </div>
-            
+
             {/* Dynamically Generated Room Results */}
             <div className="space-y-6">
               {filteredRooms.length > 0 ? (
@@ -657,8 +656,8 @@ export default function Search() {
                   <div key={room.id} className="flex flex-col bg-white border rounded-lg overflow-hidden mb-6">
                     <div className="flex gap-6 p-4">
                       {/* Room Image */}
-                      <div 
-                        className="w-80 h-48 relative cursor-pointer rounded-lg overflow-hidden" 
+                      <div
+                        className="w-80 h-48 relative cursor-pointer rounded-lg overflow-hidden"
                         onClick={() => handleRoomSelect(room)}
                       >
                         <Image
@@ -678,16 +677,16 @@ export default function Search() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Room Details */}
                       <div className="flex-1">
                         <h3 className="text-xl font-bold mb-2">{room.type}</h3>
                         <p className="text-gray-700 mb-4">{room.description}</p>
-                        
+
                         {/* Amenities */}
                         <div className="flex flex-wrap gap-2 mb-4">
                           {room.amenities.map((amenity, index) => (
-                            <span 
+                            <span
                               key={index}
                               className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
                             >
@@ -696,14 +695,14 @@ export default function Search() {
                             </span>
                           ))}
                         </div>
-                        
+
                         {/* Price and Select Button */}
                         <div className="flex items-center justify-between">
                           <div className="text-right">
                             <span className="text-xl font-bold">${room.price}</span>
                             <span className="text-gray-600 ml-1">/ night</span>
                           </div>
-                          <Link 
+                          <Link
                             href={{
                               pathname: `/room/${room.id}`,
                               query: {
@@ -731,11 +730,11 @@ export default function Search() {
                             fill
                             style={{ objectFit: 'cover' }}
                           />
-                          
+
                           {/* Navigation arrows - only show if there are multiple images */}
                           {room.images.length > 1 && (
                             <>
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleImageNavigation('prev');
@@ -746,7 +745,7 @@ export default function Search() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                               </button>
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleImageNavigation('next');
@@ -770,12 +769,11 @@ export default function Search() {
                         {room.images.length > 1 && (
                           <div className="flex gap-2 p-4 overflow-x-auto">
                             {room.images.map((image, index) => (
-                              <div 
+                              <div
                                 key={index}
                                 onClick={() => setCurrentImageIndex(index)}
-                                className={`relative w-20 h-20 flex-shrink-0 cursor-pointer rounded-lg overflow-hidden ${
-                                  currentImageIndex === index ? 'ring-2 ring-[#d4af37]' : ''
-                                }`}
+                                className={`relative w-20 h-20 flex-shrink-0 cursor-pointer rounded-lg overflow-hidden ${currentImageIndex === index ? 'ring-2 ring-[#d4af37]' : ''
+                                  }`}
                               >
                                 <Image
                                   src={image}
@@ -795,7 +793,7 @@ export default function Search() {
                 <div className="text-center py-8 border border-gray-300 rounded">
                   <h3 className="text-xl font-semibold">No rooms found matching your criteria</h3>
                   <p className="text-gray-600 mt-2">Try adjusting your filters</p>
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedRoomTypes([]);
                       setSelectedAmenities([]);
@@ -813,7 +811,7 @@ export default function Search() {
         </div>
       </main>
 
-      
+
     </div>
   );
 }

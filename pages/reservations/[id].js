@@ -37,7 +37,8 @@ export default function ReservationDetails() {
             }
 
             const data = await response.json();
-            setReservation(data.reservation);
+
+            setReservation(data);
         } catch (error) {
             console.error('Error fetching reservation details:', error);
             addNotification('Failed to load reservation details', 'error');
@@ -133,8 +134,8 @@ export default function ReservationDetails() {
                                     <p className="text-gray-600">{reservation.room.type}</p>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${reservation.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                                        reservation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-red-100 text-red-800'
+                                    reservation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'
                                     }`}>
                                     {reservation.status}
                                 </span>
@@ -146,11 +147,11 @@ export default function ReservationDetails() {
                                     <div className="space-y-2">
                                         <p className="text-gray-600">
                                             <span className="font-medium">Check-in:</span>{' '}
-                                            {new Date(reservation.checkIn).toLocaleDateString()}
+                                            {new Date(reservation.checkInDate).toLocaleDateString()}
                                         </p>
                                         <p className="text-gray-600">
                                             <span className="font-medium">Check-out:</span>{' '}
-                                            {new Date(reservation.checkOut).toLocaleDateString()}
+                                            {new Date(reservation.checkOutDate).toLocaleDateString()}
                                         </p>
                                         <p className="text-gray-600">
                                             <span className="font-medium">Guests:</span>{' '}
@@ -168,11 +169,11 @@ export default function ReservationDetails() {
                                     <div className="space-y-2">
                                         <p className="text-gray-600">
                                             <span className="font-medium">Price per night:</span>{' '}
-                                            ${reservation.room.pricePerNight.toFixed(2)}
+                                            ${reservation.room.price.toFixed(2)}
                                         </p>
                                         <p className="text-gray-600">
                                             <span className="font-medium">Total nights:</span>{' '}
-                                            {Math.ceil((new Date(reservation.checkOut) - new Date(reservation.checkIn)) / (1000 * 60 * 60 * 24))}
+                                            {Math.ceil((new Date(reservation.checkOutDate) - new Date(reservation.checkInDate)) / (1000 * 60 * 60 * 24))}
                                         </p>
                                         <p className="text-gray-600">
                                             <span className="font-medium">Total price:</span>{' '}

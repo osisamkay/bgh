@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuth } from '../contexts/AuthContext';
 import Image from 'next/image';
@@ -9,6 +9,8 @@ export default function Profile() {
     const { user, updateUser } = useAuth();
     const router = useRouter();
     const { addNotification } = useNotification();
+    const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     const [isEditing, setIsEditing] = useState({
         password: false,
@@ -18,24 +20,85 @@ export default function Profile() {
     });
 
     const [formData, setFormData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
-        email: user?.email || '',
-        phone: user?.phone || '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
         address: {
-            street: '2 Robert Speck Pkwy',
-            city: 'Mississauga',
-            province: 'Ontario',
-            postalCode: 'L4Z 1H8'
+            street: '',
+            city: '',
+            province: '',
+            postalCode: ''
         },
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
 
-    if (!user) {
-        router.push('/login');
+    // Handle client-side mounting
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Handle authentication redirect
+    useEffect(() => {
+        if (mounted && !user) {
+            router.push('/login');
+        }
+    }, [mounted, user, router]);
+
+    useEffect(() => {
+        const fetchUserDetails = async () => {
+            if (!mounted || !user) return;
+
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user details');
+                }
+
+                const userData = await response.json();
+                setFormData({
+                    firstName: userData.firstName || '',
+                    lastName: userData.lastName || '',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    address: {
+                        street: userData.address?.street || '',
+                        city: userData.address?.city || '',
+                        province: userData.address?.province || '',
+                        postalCode: userData.address?.postalCode || ''
+                    },
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                });
+            } catch (error) {
+                console.error('Error fetching user details:', error);
+                addNotification('Failed to load user details', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserDetails();
+    }, [mounted, user, addNotification]);
+
+    if (!mounted) {
         return null;
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1A2B3B]"></div>
+            </div>
+        );
     }
 
     const handleInputChange = (field, value) => {
@@ -62,7 +125,7 @@ export default function Profile() {
         }
 
         try {
-            await fetch('/api/auth/change-password', {
+            const response = await fetch('/api/auth/change-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -74,6 +137,10 @@ export default function Profile() {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error('Failed to update password');
+            }
+
             addNotification('Password updated successfully', 'success');
             setIsEditing(prev => ({ ...prev, password: false }));
             setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
@@ -84,6 +151,13 @@ export default function Profile() {
 
     const handleSave = async () => {
         try {
+            // Validate phone number format
+            const phoneRegex = /^\+?[\d\s-]{10,}$/;
+            if (formData.phone && !phoneRegex.test(formData.phone)) {
+                addNotification('Please enter a valid phone number with at least 10 digits', 'error');
+                return;
+            }
+
             const response = await fetch('/api/user/profile', {
                 method: 'PUT',
                 headers: {
@@ -94,7 +168,12 @@ export default function Profile() {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
                     phone: formData.phone,
-                    address: formData.address
+                    address: {
+                        street: formData.address.street,
+                        city: formData.address.city,
+                        province: formData.address.province,
+                        postalCode: formData.address.postalCode
+                    }
                 })
             });
 
@@ -130,7 +209,7 @@ export default function Profile() {
                         <div className="flex items-center space-x-6">
                             <div className="relative">
                                 <Image
-                                    src={user.profileImage || "/images/default-avatar.svg"}
+                                    src="/images/default-avatar.svg"
                                     alt="Profile"
                                     width={120}
                                     height={120}
@@ -139,7 +218,7 @@ export default function Profile() {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-semibold">Hello, {formData.firstName}</h1>
-                                <p className="text-gray-300 mt-1">Customer ID: {user.customerId || '6006630013'}</p>
+                                <p className="text-gray-300 mt-1">Customer ID: {user.customerId}</p>
                             </div>
                         </div>
                     </div>
@@ -155,7 +234,7 @@ export default function Profile() {
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-gray-600 mb-2">Email</p>
-                                            <p className="font-medium">{user.email}</p>
+                                            <p className="font-medium">{formData.email}</p>
                                         </div>
                                         {!isEditing.password ? (
                                             <button
@@ -220,9 +299,13 @@ export default function Profile() {
                                     <div className="space-y-4">
                                         {!isEditing.address ? (
                                             <div className="bg-gray-50 p-4 rounded-lg">
-                                                <p className="text-gray-600">{formData.address.street}</p>
-                                                <p className="text-gray-600">{formData.address.city}, {formData.address.province}</p>
-                                                <p className="text-gray-600">{formData.address.postalCode}</p>
+                                                <p className="text-gray-600">{formData.address.street || 'No address provided'}</p>
+                                                <p className="text-gray-600">
+                                                    {formData.address.city && formData.address.province
+                                                        ? `${formData.address.city}, ${formData.address.province}`
+                                                        : 'No city/province provided'}
+                                                </p>
+                                                <p className="text-gray-600">{formData.address.postalCode || 'No postal code provided'}</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
@@ -275,7 +358,11 @@ export default function Profile() {
                                         {!isEditing.personalInfo ? (
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <p className="text-gray-600">Name</p>
-                                                <p className="font-medium">{formData.firstName} {formData.lastName}</p>
+                                                <p className="font-medium">
+                                                    {formData.firstName && formData.lastName
+                                                        ? `${formData.firstName} ${formData.lastName}`
+                                                        : 'No name provided'}
+                                                </p>
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
@@ -311,7 +398,7 @@ export default function Profile() {
                                         {!isEditing.phone ? (
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <p className="text-gray-600">Primary Phone</p>
-                                                <p className="font-medium">{formData.phone || '(587) 123-9066'}</p>
+                                                <p className="font-medium">{formData.phone || 'No phone number provided'}</p>
                                             </div>
                                         ) : (
                                             <input
@@ -331,27 +418,19 @@ export default function Profile() {
                                     </div>
                                 </section>
 
-                                {/* Credit Card */}
-                                <section className="bg-white rounded-lg border border-gray-200 p-6">
-                                    <h3 className="text-xl font-semibold mb-4 text-[#1A2B3B]">Payment Methods</h3>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <p className="text-gray-600">No payment methods on file</p>
+                                {/* Save Button */}
+                                {Object.values(isEditing).some(Boolean) && (
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={handleSave}
+                                            className="bg-[#1A2B3B] text-white px-12 py-3 rounded-lg hover:bg-[#2c3e50] transition-colors text-lg font-medium"
+                                        >
+                                            SAVE CHANGES
+                                        </button>
                                     </div>
-                                </section>
+                                )}
                             </div>
                         </div>
-
-                        {/* Save Button */}
-                        {Object.values(isEditing).some(Boolean) && (
-                            <div className="mt-8 flex justify-end">
-                                <button
-                                    onClick={handleSave}
-                                    className="bg-[#1A2B3B] text-white px-12 py-3 rounded-lg hover:bg-[#2c3e50] transition-colors text-lg font-medium"
-                                >
-                                    SAVE CHANGES
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </main>

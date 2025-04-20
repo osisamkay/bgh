@@ -1,50 +1,87 @@
-import userData from '../data/users.json';
-import { v4 as uuidv4 } from 'uuid';
+import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { prisma } from '@/lib/prisma';
 
-// In a real application, you would use a secure way to store users
-// This is just for demonstration purposes
-let users = userData.users;
-
-// Function to simulate saving to our "database"
-const saveToDatabase = (updatedUsers) => {
-  users = updatedUsers;
-  // In a real application, you would write to the file or database
-  console.log('Database updated:', users);
-  return true;
-};
-
-// Get all users (admin only in a real app)
-export const getAllUsers = () => {
-  return users;
+// Get all users (admin only)
+export const getAllUsers = async () => {
+  return await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
 };
 
 // Find user by email
-export const findUserByEmail = (email) => {
-  return users.find(user => user.email.toLowerCase() === email.toLowerCase());
+export const findUserByEmail = async (email) => {
+  return await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      emailVerified: true,
+      password: true,
+      phone: true,
+      streetAddress: true,
+      city: true,
+      province: true,
+      postalCode: true,
+      country: true,
+      customerId: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
 };
 
 // Find user by ID
-export const findUserById = (id) => {
-  return users.find(user => user.id === id);
+export const findUserById = async (id) => {
+  return await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      emailVerified: true,
+      phone: true,
+      streetAddress: true,
+      city: true,
+      province: true,
+      postalCode: true,
+      country: true,
+      customerId: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
 };
 
 // Authenticate user (login)
-export const authenticateUser = (email, password) => {
-  const user = findUserByEmail(email);
+export const authenticateUser = async (email, password) => {
+  const user = await findUserByEmail(email);
 
   if (!user) {
     return { success: false, message: 'User not found' };
   }
 
-  if (user.password !== password) {
+  const isValidPassword = await bcrypt.compare(password, user.password);
+  if (!isValidPassword) {
     return { success: false, message: 'Incorrect password' };
   }
 
-  // Create a user object without the password
+  // Remove password from user object
   const { password: _, ...userWithoutPassword } = user;
 
   return {
@@ -55,136 +92,181 @@ export const authenticateUser = (email, password) => {
 };
 
 // Register new user
-export const registerUser = (userData) => {
+export const registerUser = async (userData) => {
   // Check if email already exists
-  const existingUser = findUserByEmail(userData.email);
-
+  const existingUser = await findUserByEmail(userData.email);
   if (existingUser) {
     return { success: false, message: 'Email already in use' };
   }
 
-  // Validate password requirements
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(userData.password)) {
-    return {
-      success: false,
-      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character'
-    };
-  }
+  // Hash password
+  const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-  // Create new user object
-  const newUser = {
-    id: uuidv4(),
-    ...userData,
-    joinedDate: new Date().toISOString().split('T')[0],
-    reservations: []
-  };
+  // Create new user
+  const newUser = await prisma.user.create({
+    data: {
+      email: userData.email.toLowerCase(),
+      password: hashedPassword,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      phone: userData.phone || null,
+      role: 'USER',
+      emailVerified: false
+    },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      emailVerified: true,
+      phone: true,
+      streetAddress: true,
+      city: true,
+      province: true,
+      postalCode: true,
+      country: true,
+      customerId: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
 
-  // Add to "database"
-  const updatedUsers = [...users, newUser];
-  saveToDatabase(updatedUsers);
-
-  // Return success without password
-  const { password: _, ...userWithoutPassword } = newUser;
   return {
     success: true,
     message: 'Registration successful',
-    user: userWithoutPassword
+    user: newUser
   };
 };
 
 // Update user profile
-export const updateUserProfile = (userId, updatedData) => {
-  const userIndex = users.findIndex(user => user.id === userId);
+export const updateUserProfile = async (userId, updatedData) => {
+  try {
+    // Don't allow changing email to one that already exists
+    if (updatedData.email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: updatedData.email.toLowerCase(),
+          NOT: {
+            id: userId
+          }
+        }
+      });
 
-  if (userIndex === -1) {
-    return { success: false, message: 'User not found' };
-  }
-
-  // Don't allow changing email to one that already exists
-  if (updatedData.email && updatedData.email !== users[userIndex].email) {
-    const emailExists = users.some(user =>
-      user.id !== userId && user.email.toLowerCase() === updatedData.email.toLowerCase()
-    );
-
-    if (emailExists) {
-      return { success: false, message: 'Email already in use' };
+      if (existingUser) {
+        return { success: false, message: 'Email already in use' };
+      }
     }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...updatedData,
+        email: updatedData.email?.toLowerCase()
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        emailVerified: true,
+        phone: true,
+        streetAddress: true,
+        city: true,
+        province: true,
+        postalCode: true,
+        country: true,
+        customerId: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser
+    };
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return { success: false, message: 'Failed to update profile' };
   }
-
-  // Update user
-  const updatedUser = { ...users[userIndex], ...updatedData };
-  const updatedUsers = [...users];
-  updatedUsers[userIndex] = updatedUser;
-
-  saveToDatabase(updatedUsers);
-
-  // Return updated user without password
-  const { password: _, ...userWithoutPassword } = updatedUser;
-  return {
-    success: true,
-    message: 'Profile updated successfully',
-    user: userWithoutPassword
-  };
 };
 
 // Change password
-export const changePassword = (userId, currentPassword, newPassword) => {
-  const userIndex = users.findIndex(user => user.id === userId);
+export const changePassword = async (userId, currentPassword, newPassword) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true }
+    });
 
-  if (userIndex === -1) {
-    return { success: false, message: 'User not found' };
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return { success: false, message: 'Current password is incorrect' };
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    return { success: true, message: 'Password changed successfully' };
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return { success: false, message: 'Failed to change password' };
   }
+};
 
-  // Verify current password
-  if (users[userIndex].password !== currentPassword) {
-    return { success: false, message: 'Current password is incorrect' };
-  }
+// Reset password
+export const resetPassword = async (email) => {
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return { success: false, message: 'Email not found' };
+    }
 
-  // Validate new password
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(newPassword)) {
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken,
+        resetTokenExpiry
+      }
+    });
+
+    // In a real application, you would send an email with the reset token
     return {
-      success: false,
-      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character'
+      success: true,
+      message: 'Password reset instructions have been sent to your email'
     };
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    return { success: false, message: 'Failed to process password reset' };
   }
-
-  // Update password
-  const updatedUser = { ...users[userIndex], password: newPassword };
-  const updatedUsers = [...users];
-  updatedUsers[userIndex] = updatedUser;
-
-  saveToDatabase(updatedUsers);
-
-  return { success: true, message: 'Password changed successfully' };
 };
 
-// Reset password (in a real app, this would send an email)
-export const resetPassword = (email) => {
-  const userIndex = users.findIndex(user => user.email.toLowerCase() === email.toLowerCase());
-
-  if (userIndex === -1) {
-    return { success: false, message: 'Email not found' };
-  }
-
-  // In a real application, generate a reset token and send an email
-  // For this demo, we'll just simulate a successful reset request
-
-  return {
-    success: true,
-    message: 'Password reset instructions have been sent to your email'
-  };
-};
-
-// Get the current user from the token stored in localStorage or sessionStorage
-export const getCurrentUser = () => {
+// Get the current user from the token
+export const getCurrentUser = async () => {
   if (typeof window === 'undefined') {
     return null;
   }
 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
   if (!token) {
     return null;
   }
@@ -192,12 +274,13 @@ export const getCurrentUser = () => {
   try {
     const decoded = jwt.decode(token);
     if (!decoded || Date.now() >= decoded.exp * 1000) {
-      // Token is invalid or expired
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
       return null;
     }
-    return decoded;
+
+    const user = await findUserById(decoded.userId);
+    return user;
   } catch (error) {
     console.error('Error decoding token:', error);
     return null;
@@ -220,8 +303,8 @@ export const logoutUser = () => {
 };
 
 // Check if user is authenticated
-export const isAuthenticated = () => {
-  const currentUser = getCurrentUser();
+export const isAuthenticated = async () => {
+  const currentUser = await getCurrentUser();
   return !!currentUser;
 };
 
@@ -234,8 +317,7 @@ export const getAuthToken = () => {
 };
 
 export async function hashPassword(password) {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
+  return bcrypt.hash(password, 10);
 }
 
 export async function comparePasswords(password, hashedPassword) {
@@ -243,8 +325,11 @@ export async function comparePasswords(password, hashedPassword) {
 }
 
 export function generateToken(userId) {
-  const token = crypto.randomBytes(32).toString('hex');
-  return token;
+  return jwt.sign(
+    { userId },
+    process.env.JWT_SECRET,
+    { expiresIn: '60m' }
+  );
 }
 
 export async function verifyToken(token) {
@@ -254,26 +339,7 @@ export async function verifyToken(token) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Find user in database using the correct ID field from our JWT structure
-    const user = await prisma.user.findUnique({
-      where: {
-        id: decoded.userId // We only use userId from the token
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        emailVerified: true
-      }
-    });
-
-    if (!user) {
-      return null;
-    }
-
+    const user = await findUserById(decoded.userId);
     return user;
   } catch (error) {
     console.error('Token verification error:', error);

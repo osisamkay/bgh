@@ -43,18 +43,64 @@ export function AuthProvider({ children }) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        // Fetch complete user profile
+        const profileResponse = await fetch('/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setUser(profileData);
+        } else {
+          setUser(data.user);
+        }
       } else {
         // Invalid token, clear storage
         localStorage.removeItem('auth_token');
         setUser(null);
+        // Only redirect to login if we're not already on a public page
+        const publicPages = ['/', '/login', '/signup', '/forgot-password', '/reset-password'];
+        if (!publicPages.includes(router.pathname)) {
+          router.push('/login');
+        }
       }
     } catch (error) {
       console.error('Token validation error:', error);
       localStorage.removeItem('auth_token');
       setUser(null);
+      // Only redirect to login if we're not already on a public page
+      const publicPages = ['/', '/login', '/signup', '/forgot-password', '/reset-password'];
+      if (!publicPages.includes(router.pathname)) {
+        router.push('/login');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return null;
+
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const profileData = await response.json();
+      setUser(profileData);
+      return profileData;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
     }
   };
 
@@ -155,6 +201,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('auth_token');
     setUser(null);
     addNotification('Logged out successfully', 'info');
+    router.push('/login');
   };
 
   const verifyEmail = async (token) => {
@@ -203,7 +250,7 @@ export function AuthProvider({ children }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Password reset request failed');
+        throw new Error(data.message || 'Password reset failed');
       }
 
       return {
@@ -220,26 +267,21 @@ export function AuthProvider({ children }) {
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      ...updatedUserData
-    }));
+    setUser(updatedUserData);
   };
 
   const value = {
     user,
     loading,
+    mounted,
     signup,
     login,
     logout,
     verifyEmail,
     resetPassword,
-    updateUser
+    updateUser,
+    fetchUserProfile
   };
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <AuthContext.Provider value={value}>

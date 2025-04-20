@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import Link from 'next/link';
+import EmailPreview from '../../components/notifications/EmailPreview';
 
 const BookingConfirmation = () => {
     const router = useRouter();
@@ -14,10 +15,11 @@ const BookingConfirmation = () => {
     const [booking, setBooking] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [emailPreviewUrl, setEmailPreviewUrl] = useState(null);
 
     useEffect(() => {
         async function confirmPayment() {
-            if (!id || !payment_intent || redirect_status !== 'succeeded') return;
+            if (!id || !payment_intent || redirect_status !== 'succeeded' || !booking) return;
 
             try {
                 const token = localStorage.getItem('auth_token');
@@ -34,7 +36,7 @@ const BookingConfirmation = () => {
                     },
                     body: JSON.stringify({
                         paymentIntentId: payment_intent,
-                        paymentAmount: booking?.pricing?.total || 0
+                        paymentAmount: booking.totalPrice
                     })
                 });
 
@@ -43,10 +45,15 @@ const BookingConfirmation = () => {
                     throw new Error(data.error || 'Failed to confirm payment');
                 }
 
-                addNotification('Payment successful! Your booking is confirmed.', 'success');
+                const data = await response.json();
+                if (data.emailDetails?.previewUrl) {
+                    setEmailPreviewUrl(data.emailDetails.previewUrl);
+                }
             } catch (error) {
                 console.error('Error confirming payment:', error);
                 addNotification(error.message || 'Failed to confirm payment', 'error');
+            } finally {
+                setIsProcessing(false);
             }
         }
 
@@ -87,7 +94,7 @@ const BookingConfirmation = () => {
         }
 
         fetchBookingDetails();
-    }, [id, user, payment_intent, redirect_status, addNotification, booking?.pricing?.total, isProcessing]);
+    }, [id, user, payment_intent, redirect_status, addNotification, isProcessing]);
 
     if (isLoading) {
         return (
@@ -103,8 +110,8 @@ const BookingConfirmation = () => {
                 <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
                     <h2 className="text-2xl font-bold mb-4">Booking Not Found</h2>
                     <p className="text-gray-600 mb-6">We couldn't find the booking details you're looking for.</p>
-                    <Link href="/my-reservations">
-                        <a className="text-blue-600 hover:text-blue-800">View My Reservations</a>
+                    <Link href="/my-reservations" className="text-blue-600 hover:text-blue-800">
+                        View My Reservations
                     </Link>
                 </div>
             </div>
@@ -171,20 +178,23 @@ const BookingConfirmation = () => {
                             A confirmation email has been sent to your email address.
                         </p>
                         <div className="space-x-4">
-                            <Link href="/my-reservations">
-                                <a className="inline-block px-6 py-2 bg-[#1B2C42] text-white rounded-md hover:bg-opacity-90">
-                                    View My Reservations
-                                </a>
+                            <Link href="/my-reservations" className="inline-block px-6 py-2 bg-[#1B2C42] text-white rounded-md hover:bg-opacity-90">
+                                View My Reservations
                             </Link>
-                            <Link href="/">
-                                <a className="inline-block px-6 py-2 border border-[#1B2C42] text-[#1B2C42] rounded-md hover:bg-gray-50">
-                                    Return to Home
-                                </a>
+                            <Link href="/" className="inline-block px-6 py-2 border border-[#1B2C42] text-[#1B2C42] rounded-md hover:bg-gray-50">
+                                Return to Home
                             </Link>
                         </div>
                     </div>
                 </div>
             </main>
+
+            {emailPreviewUrl && (
+                <EmailPreview
+                    previewUrl={emailPreviewUrl}
+                    onClose={() => setEmailPreviewUrl(null)}
+                />
+            )}
         </div>
     );
 };

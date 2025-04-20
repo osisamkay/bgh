@@ -6,7 +6,7 @@ export default function RoomSection() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(4);
   const rooms = roomsData.rooms;
-  
+
   // Function to handle window resize and set visible count
   useEffect(() => {
     const handleResize = () => {
@@ -20,30 +20,30 @@ export default function RoomSection() {
         setVisibleCount(4);
       }
     };
-    
+
     // Set initial value
     handleResize();
-    
+
     // Add event listener
     window.addEventListener('resize', handleResize);
-    
+
     // Clean up
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   // Function to get current visible rooms
   const getVisibleRooms = () => {
     // Create a circular sliced array
     const start = activeIndex % rooms.length;
     const end = start + visibleCount;
-    
+
     // If we need to wrap around to the beginning of the array
     if (end > rooms.length) {
       const firstPart = rooms.slice(start);
       const secondPart = rooms.slice(0, end - rooms.length);
       return [...firstPart, ...secondPart];
     }
-    
+
     return rooms.slice(start, end);
   };
 
@@ -60,9 +60,9 @@ export default function RoomSection() {
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16" id="rooms">
       <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-12">ROOMS & SUITES</h2>
-      
+
       <div className="relative px-4">
-        <button 
+        <button
           onClick={prevRoom}
           className="absolute left-0 sm:-left-4 top-1/2 transform -translate-y-1/2 bg-white w-8 h-8 rounded-full shadow-lg z-10 flex items-center justify-center"
           aria-label="Previous room"
@@ -71,12 +71,12 @@ export default function RoomSection() {
             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </button>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {visibleRooms.map((room, index) => (
             <div key={`${room.id}-${index}`} className="group cursor-pointer">
               <div className="h-56 sm:h-64 rounded-lg overflow-hidden relative">
-                <img 
+                <img
                   src={room.image}
                   alt={`${room.type}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 absolute inset-0"
@@ -108,8 +108,8 @@ export default function RoomSection() {
             </div>
           ))}
         </div>
-        
-        <button 
+
+        <button
           onClick={nextRoom}
           className="absolute right-0 sm:-right-4 top-1/2 transform -translate-y-1/2 bg-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center"
           aria-label="Next room"
@@ -119,24 +119,23 @@ export default function RoomSection() {
           </svg>
         </button>
       </div>
-      
+
       {/* Pagination indicators */}
       <div className="flex justify-center mt-6">
         {Array.from({ length: Math.min(rooms.length, 8) }).map((_, index) => (
-          <button 
-            key={index} 
+          <button
+            key={index}
             onClick={() => setActiveIndex(index)}
-            className={`w-2 h-2 mx-1 rounded-full transition-all duration-300 ${
-              (index >= activeIndex && index < activeIndex + visibleCount) || 
-              (activeIndex + visibleCount > rooms.length && index < (activeIndex + visibleCount) % rooms.length)
-                ? 'bg-gray-800 scale-125' 
+            className={`w-2 h-2 mx-1 rounded-full transition-all duration-300 ${(index >= activeIndex && index < activeIndex + visibleCount) ||
+                (activeIndex + visibleCount > rooms.length && index < (activeIndex + visibleCount) % rooms.length)
+                ? 'bg-gray-800 scale-125'
                 : 'bg-gray-300'
-            }`}
+              }`}
             aria-label={`Go to room ${index + 1}`}
           />
         ))}
       </div>
-      
+
       {/* View All Rooms Button */}
       <div className="text-center mt-8">
         <Link href="/search">

@@ -17,10 +17,12 @@ export default function RoomDetails() {
     checkOut: '',
     guests: 1
   });
-  const { user } = useAuth();
+  const { user, fetchUserProfile } = useAuth();
   const { addNotification } = useNotification();
 
   const { checkIn, checkOut, guests } = router.query;
+
+  console.log("efew", user)
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -93,6 +95,8 @@ export default function RoomDetails() {
     });
   };
 
+
+
   const handleBook = async () => {
     // Booking requires login
     if (!user) {
@@ -110,8 +114,16 @@ export default function RoomDetails() {
     }
 
     // Validate required fields
-    if (!user.phone) {
+    if (!user.phone || user.phone.trim() === '') {
       addNotification('Please update your phone number in your profile before booking', 'error');
+      router.push('/profile');
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    if (!phoneRegex.test(user.phone)) {
+      addNotification('Please enter a valid phone number with at least 10 digits in your profile', 'error');
       router.push('/profile');
       return;
     }

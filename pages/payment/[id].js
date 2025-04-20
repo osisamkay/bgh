@@ -294,10 +294,10 @@ const Payment = () => {
                 lastName: user.lastName || '',
                 email: user.email || '',
                 confirmEmail: user.email || '',
-                streetAddress: user.streetAddress || '',
-                province: user.province || '',
-                postalCode: user.postalCode || '',
-                country: user.country || '',
+                streetAddress: user.address.street || '',
+                province: user.address.province || '',
+                postalCode: user.address.postalCode || '',
+                country: user?.address?.country || 'Canada',
                 phone: user.phone || ''
             }));
         }
@@ -791,7 +791,7 @@ const Payment = () => {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block mb-1">Select Card Type:</label>
                                     <select
@@ -853,7 +853,7 @@ const Payment = () => {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="mb-8">

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { verifyToken } from '../../../../utils/auth';
+import { verifyToken } from '@/utils/auth';
 
 const prisma = new PrismaClient();
 
@@ -9,55 +9,94 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Verify authentication
+        const { id } = req.query;
         const token = req.headers.authorization?.split(' ')[1];
+
         if (!token) {
-            return res.status(401).json({ error: 'No authentication token' });
+            return res.status(401).json({ error: 'Authentication token is required' });
         }
 
-        const decoded = await verifyToken(token);
-        if (!decoded) {
+        const user = await verifyToken(token);
+        if (!user || !user.id) {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const { id } = req.query;
         const { paymentIntentId, paymentAmount } = req.body;
 
-        // Start a transaction
-        const result = await prisma.$transaction(async (prisma) => {
+        if (!paymentIntentId || !paymentAmount) {
+            return res.status(400).json({ error: 'Payment details are required' });
+        }
+
+        const reservation = await prisma.booking.findUnique({
+            where: { id },
+            include: {
+                user: true
+            }
+        });
+
+        if (!reservation) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        if (reservation.userId !== user.id) {
+            return res.status(403).json({ error: 'Not authorized to confirm this payment' });
+        }
+
+        if (reservation.status === 'confirmed') {
+            return res.status(400).json({ error: 'Payment already confirmed' });
+        }
+
+        if (reservation.status !== 'pending') {
+            return res.status(400).json({ error: 'Invalid reservation status for payment confirmation' });
+        }
+
+        const updatedReservation = await prisma.$transaction(async (tx) => {
             // Create payment record
-            const payment = await prisma.payment.create({
+            const payment = await tx.payment.create({
                 data: {
-                    bookingId: id,
-                    userId: decoded.userId,
                     amount: paymentAmount,
-                    paymentIntentId: paymentIntentId,
+                    paymentIntentId,
                     status: 'completed',
                     paymentMethod: 'stripe',
                     paymentDate: new Date(),
+                    booking: {
+                        connect: { id }
+                    },
+                    user: {
+                        connect: { id: user.id }
+                    }
                 }
             });
 
-            // Update booking status
-            const updatedBooking = await prisma.booking.update({
+            // Update reservation status
+            const updatedReservation = await tx.booking.update({
                 where: { id },
                 data: {
                     status: 'confirmed',
-                    paymentStatus: 'paid',
+                    paymentId: payment.id,
                     updatedAt: new Date()
                 },
                 include: {
                     room: true,
+                    user: true,
                     payment: true
                 }
             });
 
-            return { payment, booking: updatedBooking };
+            return updatedReservation;
         });
 
-        res.status(200).json(result);
+        // TODO: Send confirmation email
+        // await sendConfirmationEmail(updatedReservation);
+
+        return res.status(200).json({
+            message: 'Payment confirmed successfully',
+            reservation: updatedReservation
+        });
     } catch (error) {
         console.error('Error confirming payment:', error);
-        res.status(500).json({ error: 'Failed to confirm payment' });
+        return res.status(500).json({ error: 'Failed to confirm payment' });
+    } finally {
+        await prisma.$disconnect();
     }
 } 

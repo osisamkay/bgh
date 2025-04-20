@@ -82,7 +82,7 @@ export default async function handler(req, res) {
         emailVerified: user.emailVerified || false
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '60m' }
     );
 
     // Check if email is verified
