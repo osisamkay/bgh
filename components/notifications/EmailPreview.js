@@ -47,14 +47,14 @@ export default function EmailPreview({ previewUrl, onClose }) {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-4 right-4 max-w-md w-full bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
+          className="fixed bottom-4 right-4 w-[calc(100%-2rem)] sm:w-[440px] max-w-md bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-100"
         >
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 bg-blue-50 p-2 rounded-lg">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="flex-shrink-0 bg-blue-50 p-1.5 sm:p-2 rounded-lg">
                   <svg
-                    className="h-6 w-6 text-blue-600"
+                    className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -67,22 +67,22 @@ export default function EmailPreview({ previewUrl, onClose }) {
                     />
                   </svg>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                     Email Preview Available
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                     View your confirmation email
                   </p>
                 </div>
               </div>
               <button
-                className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                className="text-gray-400 hover:text-gray-500 transition-colors duration-200 -mr-1 sm:mr-0"
                 onClick={handleClose}
               >
                 <span className="sr-only">Close</span>
                 <svg
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -95,14 +95,14 @@ export default function EmailPreview({ previewUrl, onClose }) {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <button
                 onClick={handlePreviewClick}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="w-full bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center justify-center space-x-2"
               >
                 <span>View Email Preview</span>
                 <svg
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -116,9 +116,9 @@ export default function EmailPreview({ previewUrl, onClose }) {
                 </svg>
               </button>
 
-              <div className="flex items-center justify-center text-sm text-gray-500">
+              <div className="flex items-center justify-center text-xs sm:text-sm text-gray-500">
                 <svg
-                  className="h-4 w-4 mr-1"
+                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -136,7 +136,7 @@ export default function EmailPreview({ previewUrl, onClose }) {
           </div>
 
           {/* Progress bar */}
-          <div className="h-1 bg-gray-100">
+          <div className="h-0.5 sm:h-1 bg-gray-100">
             <div
               className="h-full bg-blue-600 transition-all duration-1000 ease-linear"
               style={{ width: `${(timeLeft / 300) * 100}%` }}

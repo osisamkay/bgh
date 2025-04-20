@@ -51,13 +51,13 @@ export default function RoomDetails() {
 
   const handleImageNavigation = (direction) => {
     if (!room?.images) return;
-    
+
     if (direction === 'next') {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === room.images.length - 1 ? 0 : prev + 1
       );
     } else {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === 0 ? room.images.length - 1 : prev - 1
       );
     }
@@ -89,7 +89,7 @@ export default function RoomDetails() {
         checkOut: searchParams.checkOut,
         guests: searchParams.guests
       }).toString()}`;
-      
+
       router.push({
         pathname: '/register',
         query: { returnUrl: encodeURIComponent(returnUrl) }
@@ -132,12 +132,12 @@ export default function RoomDetails() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row justify-between gap-4 sm:gap-8">
           {/* Left Column - Room Images and Details */}
-          <div className="w-full lg:w-[700px]">
+          <div className="w-full lg:w-[500px] flex-shrink-0">
             {/* Image Slider */}
-            <div className="relative h-[400px] w-full rounded-lg overflow-hidden">
+            <div className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full rounded-lg overflow-hidden">
               <Image
                 src={room.images ? room.images[currentImageIndex] : room.image}
                 alt={`${room.type} - View ${currentImageIndex + 1}`}
@@ -145,22 +145,22 @@ export default function RoomDetails() {
                 style={{ objectFit: 'cover' }}
                 priority
               />
-              
+
               {room.images && room.images.length > 1 && (
                 <>
-                  <button 
+                  <button
                     onClick={() => handleImageNavigation('prev')}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                    className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 sm:h-6 w-5 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleImageNavigation('next')}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                    className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 sm:h-6 w-5 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -171,9 +171,7 @@ export default function RoomDetails() {
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full ${
-                          currentImageIndex === index ? 'bg-white' : 'bg-white/50'
-                        }`}
+                        className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${currentImageIndex === index ? 'bg-white' : 'bg-white/50'}`}
                       />
                     ))}
                   </div>
@@ -182,24 +180,23 @@ export default function RoomDetails() {
             </div>
 
             {/* Room Details */}
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4">Room Details</h2>
-              <div className="flex items-center mb-4">
-                <h1 className="text-2xl font-bold mr-6">{room.type.toUpperCase()}</h1>
-                <div className="text-lg text-gray-600 border-l border-gray-300 pl-6">
+            <div className="mt-4 sm:mt-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h1 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-0">{room.type.toUpperCase()}</h1>
+                <div className="text-base sm:text-lg text-gray-600 sm:border-l sm:border-gray-300 sm:pl-6">
                   2 ADULTS
                 </div>
               </div>
-              
-              <p className="text-gray-700 mb-4">
+
+              <p className="text-sm sm:text-base text-gray-700 mb-4">
                 Spacious room featuring a separate living area, Sofa bed, and Queen size bed. Suitable for small families.
               </p>
-              
-              <p className="text-2xl font-bold mb-4">${room.price} / night</p>
-              
-              <button 
+
+              <p className="text-xl sm:text-2xl font-bold mb-4">${room.price} / night</p>
+
+              <button
                 onClick={handleChangeSelection}
-                className="text-blue-600 hover:underline"
+                className="text-blue-600 hover:underline text-sm sm:text-base"
               >
                 Change or cancel selection
               </button>
@@ -207,112 +204,103 @@ export default function RoomDetails() {
           </div>
 
           {/* Right Column - Property Information & Amenities */}
-          <div className="w-full lg:w-1/3">
+          <div className="w-full lg:w-1/2 mt-6 lg:mt-0">
             <div className="bg-white rounded-lg">
-              <h2 className="text-2xl font-bold mb-6">Property Information</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="w-5 h-5 mr-3">
-                    <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Property Information</h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center">
+                    <div className="w-4 sm:w-5 h-4 sm:h-5 mr-2 sm:mr-3">
+                      <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600">CHECK IN: 04:00 PM</p>
                   </div>
-                  <p className="text-gray-600">CHECK IN: 04:00 PM</p>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="w-5 h-5 mr-3">
-                    <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+
+                  <div className="flex items-center">
+                    <div className="w-4 sm:w-5 h-4 sm:h-5 mr-2 sm:mr-3">
+                      <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600">CHECK OUT: 11:00 AM</p>
                   </div>
-                  <p className="text-gray-600">CHECK OUT: 11:00 AM</p>
+
+                  <div className="flex items-center">
+                    <div className="w-4 sm:w-5 h-4 sm:h-5 mr-2 sm:mr-3">
+                      <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600">This hotel has a smoke-free policy</p>
+                  </div>
+
+                  <div className="flex items-center">
+                    <div className="w-4 sm:w-5 h-4 sm:h-5 mr-2 sm:mr-3">
+                      <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <Link href="#" className="text-sm sm:text-base text-blue-600 hover:underline">
+                      See Accessibility Features
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="flex items-center">
-                  <div className="w-5 h-5 mr-3">
-                    <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
+                <div className="mt-4 sm:mt-0">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">Pet Policy</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      3rd Floor. Pets must be attended in room & waiver signed. $40+ per pet per day<br />
+                      Contact hotel for details
+                    </p>
                   </div>
-                  <p className="text-gray-600">This hotel has a smoke-free policy</p>
-                </div>
 
-                <div className="flex items-center">
-                  <div className="w-5 h-5 mr-3">
-                    <svg className="text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                  <div className="mt-4">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">Parking</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      Complimentary on-site parking
+                    </p>
                   </div>
-                  <Link href="#" className="text-blue-600 hover:underline">
-                    See Accessibility Features
-                  </Link>
-                </div>
-                
-
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-2">Pet Policy</h3>
-                  <p className="text-gray-600 text-sm">
-                    3rd Floor. Pets must be attended in room & waiver signed. $40+ per pet per day<br />
-                    Contact hotel for details
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-2">Parking</h3>
-                  <p className="text-gray-600 text-sm">
-                    Complimentary on-site parking
-                  </p>
                 </div>
               </div>
 
               {/* Amenities Section */}
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-6">Amenities</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <Image src="/images/baby-bib-icon.svg" alt="Kids eat free" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Kids eat free</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/breakfast-set-svgrepo-com.svg" alt="Free breakfast" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Free breakfast</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/cleaning-spray-svgrepo-com.svg" alt="Daily housekeeping" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Daily housekeeping</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/weightlifting-gym-svgrepo-com.svg" alt="Fitness center" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Fitness center</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/parking-svgrepo-com.svg" alt="On-site parking" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">On-site parking</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/swim-svgrepo-com.svg" alt="Pool" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Pool</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/no-smoking-svgrepo-com.svg" alt="Smoke-free hotel" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Smoke-free hotel</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="w-6 h-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                    </svg>
-                    <span className="text-gray-800">Wi-Fi</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Image src="/images/shuttle-svgrepo-com.svg" alt="Area shuttle" width={24} height={24} className="mr-3" />
-                    <span className="text-gray-800">Area shuttle</span>
-                  </div>
+              <div className="mt-6 sm:mt-8">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Amenities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {[
+                    { icon: "/images/baby-bib-icon.svg", text: "Kids eat free" },
+                    { icon: "/images/breakfast-set-svgrepo-com.svg", text: "Free breakfast" },
+                    { icon: "/images/cleaning-spray-svgrepo-com.svg", text: "Daily housekeeping" },
+                    { icon: "/images/weightlifting-gym-svgrepo-com.svg", text: "Fitness center" },
+                    { icon: "/images/parking-svgrepo-com.svg", text: "On-site parking" },
+                    { icon: "/images/swim-svgrepo-com.svg", text: "Pool" },
+                    { icon: "/images/no-smoking-svgrepo-com.svg", text: "Smoke-free hotel" },
+                    {
+                      icon: "", text: "Wi-Fi", svg: (
+                        <svg className="w-5 sm:w-6 h-5 sm:h-6 mr-2 sm:mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                        </svg>
+                      )
+                    },
+                    { icon: "/images/shuttle-svgrepo-com.svg", text: "Area shuttle" }
+                  ].map((amenity, index) => (
+                    <div key={index} className="flex items-center">
+                      {amenity.svg ? (
+                        amenity.svg
+                      ) : (
+                        <Image src={amenity.icon} alt={amenity.text} width={20} height={20} className="mr-2 sm:mr-3" />
+                      )}
+                      <span className="text-xs sm:text-sm text-gray-800">{amenity.text}</span>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="mt-6">
-                  <Link href="#" className="text-blue-600 font-medium hover:underline">
+                <div className="mt-4 sm:mt-6">
+                  <Link href="#" className="text-sm sm:text-base text-blue-600 font-medium hover:underline">
                     See all amenities &gt;
                   </Link>
                 </div>
@@ -322,16 +310,16 @@ export default function RoomDetails() {
         </div>
 
         {/* Booking Buttons */}
-        <div className="mt-12 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
-          <button 
+        <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+          <button
             onClick={handleReserve}
-            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors"
+            className="w-full sm:w-auto bg-[#1a2b3b] text-white py-2.5 sm:py-3 px-6 sm:px-8 rounded text-sm sm:text-base font-medium hover:bg-[#2c3e50] transition-colors"
           >
             RESERVE ROOM
           </button>
-          <button 
+          <button
             onClick={handleBook}
-            className="bg-[#1a2b3b] text-white py-3 px-8 rounded font-medium hover:bg-[#2c3e50] transition-colors"
+            className="w-full sm:w-auto bg-[#1a2b3b] text-white py-2.5 sm:py-3 px-6 sm:px-8 rounded text-sm sm:text-base font-medium hover:bg-[#2c3e50] transition-colors"
           >
             {user ? 'BOOK ROOM' : 'SIGN UP TO BOOK'}
           </button>
