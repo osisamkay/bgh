@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     // Find user in database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,

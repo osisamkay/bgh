@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     // Generate JWT token
     const token = jwt.sign(
       {
-        id: user.id,
+        userId: user.id,
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
         role: user.role || 'user',

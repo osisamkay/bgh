@@ -1,5 +1,7 @@
-import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import { verifyToken } from '../../../utils/auth';
+
+const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -19,20 +21,27 @@ export default async function handler(req, res) {
         const token = authHeader.split(' ')[1];
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await verifyToken(token);
+        if (!user || !user.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
+        }
 
         // Get user's reservations
-        const reservations = await prisma.reservation.findMany({
+        const reservations = await prisma.booking.findMany({
             where: {
-                userId: decoded.id,
+                userId: user.id,
             },
             include: {
                 room: {
                     select: {
-                        name: true,
+                        roomNumber: true,
                         type: true,
-                        pricePerNight: true,
-                        images: true
+                        price: true,
+                        images: true,
+                        description: true
                     }
                 }
             },
@@ -41,35 +50,43 @@ export default async function handler(req, res) {
             }
         });
 
-        return res.status(200).json({
-            success: true,
-            reservations: reservations.map(reservation => ({
-                ...reservation,
-                room: {
-                    ...reservation.room,
-                    // Get the first image as the main image
-                    mainImage: reservation.room.images[0] || null
-                }
-            }))
-        });
-    } catch (error) {
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
-            });
-        }
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Token expired'
+        if (!reservations) {
+            return res.status(200).json({
+                success: true,
+                reservations: []
             });
         }
 
+        // Format the reservations data
+        const formattedReservations = reservations.map(reservation => ({
+            id: reservation.id,
+            checkIn: reservation.checkInDate,
+            checkOut: reservation.checkOutDate,
+            numberOfGuests: reservation.numberOfGuests,
+            status: reservation.status,
+            totalPrice: reservation.totalPrice,
+            room: {
+                name: reservation.room.roomNumber,
+                type: reservation.room.type,
+                image: reservation.room.images?.[0] || null,
+                pricePerNight: reservation.room.price,
+                description: reservation.room.description
+            },
+            createdAt: reservation.createdAt
+        }));
+
+        return res.status(200).json({
+            success: true,
+            reservations: formattedReservations
+        });
+    } catch (error) {
         console.error('Error fetching reservations:', error);
         return res.status(500).json({
             success: false,
-            message: 'Error fetching reservations'
+            message: 'Failed to fetch reservations',
+            error: error.message
         });
+    } finally {
+        await prisma.$disconnect();
     }
 } 

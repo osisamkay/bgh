@@ -2,6 +2,7 @@ import userData from '../data/users.json';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 
 // In a real application, you would use a secure way to store users
@@ -34,21 +35,21 @@ export const findUserById = (id) => {
 // Authenticate user (login)
 export const authenticateUser = (email, password) => {
   const user = findUserByEmail(email);
-  
+
   if (!user) {
     return { success: false, message: 'User not found' };
   }
-  
+
   if (user.password !== password) {
     return { success: false, message: 'Incorrect password' };
   }
-  
+
   // Create a user object without the password
   const { password: _, ...userWithoutPassword } = user;
-  
-  return { 
-    success: true, 
-    message: 'Login successful', 
+
+  return {
+    success: true,
+    message: 'Login successful',
     user: userWithoutPassword
   };
 };
@@ -57,20 +58,20 @@ export const authenticateUser = (email, password) => {
 export const registerUser = (userData) => {
   // Check if email already exists
   const existingUser = findUserByEmail(userData.email);
-  
+
   if (existingUser) {
     return { success: false, message: 'Email already in use' };
   }
-  
+
   // Validate password requirements
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   if (!passwordRegex.test(userData.password)) {
-    return { 
-      success: false, 
-      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character' 
+    return {
+      success: false,
+      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character'
     };
   }
-  
+
   // Create new user object
   const newUser = {
     id: uuidv4(),
@@ -78,15 +79,15 @@ export const registerUser = (userData) => {
     joinedDate: new Date().toISOString().split('T')[0],
     reservations: []
   };
-  
+
   // Add to "database"
   const updatedUsers = [...users, newUser];
   saveToDatabase(updatedUsers);
-  
+
   // Return success without password
   const { password: _, ...userWithoutPassword } = newUser;
-  return { 
-    success: true, 
+  return {
+    success: true,
     message: 'Registration successful',
     user: userWithoutPassword
   };
@@ -95,33 +96,33 @@ export const registerUser = (userData) => {
 // Update user profile
 export const updateUserProfile = (userId, updatedData) => {
   const userIndex = users.findIndex(user => user.id === userId);
-  
+
   if (userIndex === -1) {
     return { success: false, message: 'User not found' };
   }
-  
+
   // Don't allow changing email to one that already exists
   if (updatedData.email && updatedData.email !== users[userIndex].email) {
-    const emailExists = users.some(user => 
+    const emailExists = users.some(user =>
       user.id !== userId && user.email.toLowerCase() === updatedData.email.toLowerCase()
     );
-    
+
     if (emailExists) {
       return { success: false, message: 'Email already in use' };
     }
   }
-  
+
   // Update user
   const updatedUser = { ...users[userIndex], ...updatedData };
   const updatedUsers = [...users];
   updatedUsers[userIndex] = updatedUser;
-  
+
   saveToDatabase(updatedUsers);
-  
+
   // Return updated user without password
   const { password: _, ...userWithoutPassword } = updatedUser;
-  return { 
-    success: true, 
+  return {
+    success: true,
     message: 'Profile updated successfully',
     user: userWithoutPassword
   };
@@ -130,48 +131,48 @@ export const updateUserProfile = (userId, updatedData) => {
 // Change password
 export const changePassword = (userId, currentPassword, newPassword) => {
   const userIndex = users.findIndex(user => user.id === userId);
-  
+
   if (userIndex === -1) {
     return { success: false, message: 'User not found' };
   }
-  
+
   // Verify current password
   if (users[userIndex].password !== currentPassword) {
     return { success: false, message: 'Current password is incorrect' };
   }
-  
+
   // Validate new password
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   if (!passwordRegex.test(newPassword)) {
-    return { 
-      success: false, 
-      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character' 
+    return {
+      success: false,
+      message: 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character'
     };
   }
-  
+
   // Update password
   const updatedUser = { ...users[userIndex], password: newPassword };
   const updatedUsers = [...users];
   updatedUsers[userIndex] = updatedUser;
-  
+
   saveToDatabase(updatedUsers);
-  
+
   return { success: true, message: 'Password changed successfully' };
 };
 
 // Reset password (in a real app, this would send an email)
 export const resetPassword = (email) => {
   const userIndex = users.findIndex(user => user.email.toLowerCase() === email.toLowerCase());
-  
+
   if (userIndex === -1) {
     return { success: false, message: 'Email not found' };
   }
-  
+
   // In a real application, generate a reset token and send an email
   // For this demo, we'll just simulate a successful reset request
-  
-  return { 
-    success: true, 
+
+  return {
+    success: true,
     message: 'Password reset instructions have been sent to your email'
   };
 };
@@ -183,7 +184,7 @@ export const getCurrentUser = () => {
   }
 
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  
+
   if (!token) {
     return null;
   }
@@ -253,21 +254,33 @@ export async function verifyToken(token) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find user in database using the correct ID field from our JWT structure
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: {
+        id: decoded.userId // We only use userId from the token
+      },
       select: {
         id: true,
-        name: true,
         email: true,
-        role: true,
         firstName: true,
-        lastName: true
+        lastName: true,
+        role: true,
+        emailVerified: true
       }
     });
+
+    if (!user) {
+      return null;
+    }
 
     return user;
   } catch (error) {
     console.error('Token verification error:', error);
     return null;
   }
+}
+
+export async function generateVerificationToken() {
+  return crypto.randomBytes(32).toString('hex');
 }

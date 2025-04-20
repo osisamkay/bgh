@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { sendVerificationEmail } from '@/utils/emailService';
 import { generateVerificationToken } from '@/utils/auth';
+import { verifyToken } from '@/utils/auth';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -8,25 +9,40 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { email } = req.body;
-
-        if (!email) {
-            return res.status(400).json({
+        // Get token from header
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
                 success: false,
-                message: 'Email is required'
+                message: 'No token provided'
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        // Verify token
+        const decoded = await verifyToken(token);
+        if (!decoded) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
             });
         }
 
         // Find user
         const user = await prisma.user.findUnique({
-            where: { email: email.toLowerCase() },
+            where: { id: decoded.id },
             include: {
                 verificationTokens: {
                     where: {
                         expiresAt: {
                             gt: new Date()
                         }
-                    }
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    },
+                    take: 1
                 }
             }
         });
@@ -57,6 +73,11 @@ export default async function handler(req, res) {
                     message: 'Please wait 5 minutes before requesting another verification email'
                 });
             }
+
+            // Delete old token
+            await prisma.verificationToken.delete({
+                where: { id: activeToken.id }
+            });
         }
 
         // Generate new verification token
@@ -72,14 +93,20 @@ export default async function handler(req, res) {
         });
 
         // Send verification email
-        await sendVerificationEmail(user.email, verificationToken, {
-            firstName: user.firstName,
-            lastName: user.lastName
+        const emailResult = await sendVerificationEmail({
+            to: user.email,
+            token: verificationToken,
+            name: `${user.firstName} ${user.lastName}`
         });
+
+        if (!emailResult.success) {
+            throw new Error(emailResult.error || 'Failed to send verification email');
+        }
 
         return res.status(200).json({
             success: true,
-            message: 'Verification email sent successfully'
+            message: 'Verification email sent successfully',
+            previewUrl: emailResult.previewUrl
         });
     } catch (error) {
         console.error('Resend verification error:', error);

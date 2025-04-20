@@ -134,13 +134,13 @@ export default function CheckReservation() {
 
   const handleImageNavigation = (direction) => {
     if (!reservation?.room?.images) return;
-    
+
     if (direction === 'next') {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === reservation?.room?.images?.length - 1 ? 0 : prev + 1
       );
     } else {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === 0 ? reservation?.room?.images?.length - 1 : prev - 1
       );
     }
@@ -198,10 +198,10 @@ export default function CheckReservation() {
                         style={{ objectFit: 'cover' }}
                         priority
                       />
-                      
+
                       {reservation.room.images.length > 1 && (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleImageNavigation('prev')}
                             className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
                           >
@@ -209,7 +209,7 @@ export default function CheckReservation() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleImageNavigation('next')}
                             className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
                           >
@@ -238,9 +238,8 @@ export default function CheckReservation() {
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
-                          className={`relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden ${
-                            currentImageIndex === index ? 'ring-2 ring-amber-500' : ''
-                          }`}
+                          className={`relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden ${currentImageIndex === index ? 'ring-2 ring-amber-500' : ''
+                            }`}
                         >
                           <Image
                             src={image}
@@ -323,11 +322,10 @@ export default function CheckReservation() {
                         </div>
                         <div className="flex justify-between">
                           <p className="text-sm text-gray-500">Status</p>
-                          <p className={`font-medium ${
-                            reservation.status === 'CONFIRMED' ? 'text-green-600' :
-                            reservation.status === 'CANCELLED' ? 'text-red-600' :
-                            'text-amber-600'
-                          }`}>
+                          <p className={`font-medium ${reservation.status === 'CONFIRMED' ? 'text-green-600' :
+                              reservation.status === 'CANCELLED' ? 'text-red-600' :
+                                'text-amber-600'
+                            }`}>
                             {reservation.status}
                           </p>
                         </div>
@@ -378,15 +376,15 @@ export default function CheckReservation() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Cancel Reservation</h3>
-            
+
             <div className="mb-6">
               <p className="text-gray-600 mb-4">
                 Are you sure you want to cancel your reservation?
               </p>
               <p className="text-gray-600 mb-4">
-               The room will be released immediately and cannot be reclaimed.
+                The room will be released immediately and cannot be reclaimed.
               </p>
-              
+
               <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
                 <h4 className="font-medium text-amber-800 mb-2">Reservation Details</h4>
                 <p className="text-amber-700">Room: {reservation?.room?.type}</p>

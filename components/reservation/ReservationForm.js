@@ -37,7 +37,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
       }
 
       if (isNaN(date.getTime())) return '';
-      
+
       // Format as YYYY-MM-DD for input
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -66,7 +66,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
   // Pre-fill form data from URL parameters
   useEffect(() => {
     const { checkIn, checkOut, guests } = router.query;
-    
+
     setFormData(prev => ({
       ...prev,
       checkInDate: checkIn ? formatDateForInput(checkIn) : prev.checkInDate,
@@ -85,7 +85,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
 
   const validateForm = () => {
     const errors = [];
-    
+
     if (!formData.fullName) errors.push('Full Name');
     if (!formData.email) errors.push('Email');
     if (!formData.phone) errors.push('Phone Number');
@@ -113,7 +113,7 @@ const ReservationForm = ({ room, onReservationComplete }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
