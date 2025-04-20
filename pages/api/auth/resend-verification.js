@@ -84,13 +84,17 @@ export default async function handler(req, res) {
         const verificationToken = await generateVerificationToken();
 
         // Save token to database
-        await prisma.verificationToken.create({
+        const savedToken = await prisma.verificationToken.create({
             data: {
                 token: verificationToken,
                 userId: user.id,
                 expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
             }
         });
+
+        if (!savedToken) {
+            throw new Error('Failed to save verification token');
+        }
 
         // Send verification email
         const emailResult = await sendVerificationEmail({
@@ -100,6 +104,11 @@ export default async function handler(req, res) {
         });
 
         if (!emailResult.success) {
+            // If email sending fails, delete the token we just created
+            await prisma.verificationToken.delete({
+                where: { id: savedToken.id }
+            });
+
             throw new Error(emailResult.error || 'Failed to send verification email');
         }
 
@@ -112,7 +121,7 @@ export default async function handler(req, res) {
         console.error('Resend verification error:', error);
         return res.status(500).json({
             success: false,
-            message: 'Failed to send verification email'
+            message: error.message || 'Failed to send verification email'
         });
     }
 } 

@@ -15,28 +15,15 @@ export default async function handler(req, res) {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide both email and password'
+        message: 'Email and password are required'
       });
     }
 
-    // Find user in database
-    const user = await prisma.user.findFirst({
-      where: {
-        email: email.toLowerCase(),
-      },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        emailVerified: true,
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: {
         verificationTokens: {
-          select: {
-            token: true,
-            expiresAt: true
-          },
           where: {
             expiresAt: {
               gt: new Date()
@@ -50,7 +37,7 @@ export default async function handler(req, res) {
       }
     });
 
-    if (!user || !user.password) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -101,7 +88,8 @@ export default async function handler(req, res) {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role || 'user',
-          emailVerified: false
+          emailVerified: false,
+          emailVerifiedAt: null
         },
         verificationNeeded: {
           message: 'Please verify your email address to access all features',
@@ -122,7 +110,8 @@ export default async function handler(req, res) {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role || 'user',
-        emailVerified: true
+        emailVerified: true,
+        emailVerifiedAt: user.emailVerifiedAt
       }
     });
   } catch (error) {

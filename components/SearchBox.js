@@ -12,20 +12,20 @@ import { formatDateForDisplay, formatDateForInput, calculateNights } from './sea
 
 export default function SearchBox() {
   const router = useRouter();
-  
+
   // State management
-  const [checkInDate, setCheckInDate] = useState('4/15/2025');
-  const [checkOutDate, setCheckOutDate] = useState('04/16/2025');
+  const [checkInDate, setCheckInDate] = useState(new Date().toISOString().split('T')[0]);
+  const [checkOutDate, setCheckOutDate] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [rooms, setRooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [ratePreference, setRatePreference] = useState('Best Available ***');
   const [nights, setNights] = useState(1);
-  
+
   // Refs for dropdown containers
   const datePickerRef = useRef(null);
   const roomGuestPickerRef = useRef(null);
   const ratePickerRef = useRef(null);
-  
+
   // Dropdown visibility state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showRoomGuestPicker, setShowRoomGuestPicker] = useState(false);
@@ -36,7 +36,7 @@ export default function SearchBox() {
     const inputDate = e.target.value; // YYYY-MM-DD
     const formattedDate = formatDateForDisplay(inputDate);
     setCheckInDate(formattedDate);
-    
+
     const updatedNights = calculateNights(formattedDate, checkOutDate);
     if (updatedNights > 0) {
       setNights(updatedNights);
@@ -48,7 +48,7 @@ export default function SearchBox() {
     const inputDate = e.target.value; // YYYY-MM-DD
     const formattedDate = formatDateForDisplay(inputDate);
     setCheckOutDate(formattedDate);
-    
+
     const updatedNights = calculateNights(checkInDate, formattedDate);
     if (updatedNights > 0) {
       setNights(updatedNights);
@@ -85,7 +85,7 @@ export default function SearchBox() {
       }
     });
   };
-  
+
   // Close dropdowns when clicking outside
   const closeAllDropdowns = () => {
     setShowDatePicker(false);
@@ -125,7 +125,7 @@ export default function SearchBox() {
         setShowRatePicker(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -150,10 +150,10 @@ export default function SearchBox() {
                 formatDateForInput={formatDateForInput}
               />
             </div>
-            
+
             {/* Vertical Divider */}
             <div className="hidden md:block w-px h-16 bg-gray-300 mx-6"></div>
-            
+
             {/* Rooms & Guests Selector */}
             <div ref={roomGuestPickerRef}>
               <RoomsGuestsSelector
@@ -165,10 +165,10 @@ export default function SearchBox() {
                 handleGuestChange={handleGuestChange}
               />
             </div>
-            
+
             {/* Vertical Divider */}
             <div className="hidden md:block w-px h-16 bg-gray-300 mx-6"></div>
-            
+
             {/* Rate Selector */}
             <div ref={ratePickerRef}>
               <RateSelector
@@ -178,10 +178,10 @@ export default function SearchBox() {
                 handleRateChange={handleRateChange}
               />
             </div>
-            
+
             {/* Vertical Divider */}
             <div className="hidden md:block w-px h-16 bg-gray-300 mx-6"></div>
-            
+
             {/* Search Button */}
             <div className="md:flex-1 w-full max-w-[204px] flex items-center justify-center mt-4 md:mt-0">
               <SearchButton onClick={handleSearch} />

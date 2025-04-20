@@ -69,10 +69,10 @@ export default function Profile() {
                     email: userData.email || '',
                     phone: userData.phone || '',
                     address: {
-                        street: userData.address?.street || '',
-                        city: userData.address?.city || '',
-                        province: userData.address?.province || '',
-                        postalCode: userData.address?.postalCode || ''
+                        street: userData.address?.street || userData.streetAddress || '',
+                        city: userData.address?.city || userData.city || '',
+                        province: userData.address?.province || userData.province || '',
+                        postalCode: userData.address?.postalCode || userData.postalCode || ''
                     },
                     currentPassword: '',
                     newPassword: '',
@@ -218,7 +218,7 @@ export default function Profile() {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-semibold">Hello, {formData.firstName}</h1>
-                                <p className="text-gray-300 mt-1">Customer ID: {user?.id}</p>
+                                <p className="text-gray-300 mt-1">Customer ID: {user.id}</p>
                             </div>
                         </div>
                     </div>

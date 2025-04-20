@@ -288,16 +288,17 @@ const Payment = () => {
 
     useEffect(() => {
         if (user) {
+            console.log("ddd", user)
             setCustomerInfo(prev => ({
                 ...prev,
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 email: user.email || '',
                 confirmEmail: user.email || '',
-                streetAddress: user.address.street || '',
-                province: user.address.province || '',
-                postalCode: user.address.postalCode || '',
-                country: user?.address?.country || 'Canada',
+                streetAddress: user?.address?.street || user?.streetAddress || '',
+                province: user?.address?.province || user?.province || '',
+                postalCode: user?.address?.postalCode || user?.postalCode || '',
+                country: user?.address?.country || user?.country || 'Canada',
                 phone: user.phone || ''
             }));
         }
@@ -791,69 +792,7 @@ const Payment = () => {
                                 </div>
                             )}
 
-                            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block mb-1">Select Card Type:</label>
-                                    <select
-                                        name="cardType"
-                                        value={formData.cardType}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded"
-                                    >
-                                        <option value="">Select...</option>
-                                        <option value="visa">Visa</option>
-                                        <option value="mastercard">Mastercard</option>
-                                        <option value="amex">American Express</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block mb-1">Credit/Debit Card Number:</label>
-                                    <input
-                                        type="text"
-                                        name="cardNumber"
-                                        value={formData.cardNumber}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded"
-                                        placeholder="Card number"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block mb-1">Cardholder's Name:</label>
-                                    <input
-                                        type="text"
-                                        name="cardholderName"
-                                        value={formData.cardholderName}
-                                        onChange={handleInputChange}
-                                        className="w-full p-2 border rounded"
-                                        placeholder="Name on card"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block mb-1">Expiration Date:</label>
-                                        <input
-                                            type="text"
-                                            name="expirationDate"
-                                            value={formData.expirationDate}
-                                            onChange={handleInputChange}
-                                            className="w-full p-2 border rounded"
-                                            placeholder="MM/YY"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1">CVV:</label>
-                                        <input
-                                            type="text"
-                                            name="cvv"
-                                            value={formData.cvv}
-                                            onChange={handleInputChange}
-                                            className="w-full p-2 border rounded"
-                                            placeholder="123"
-                                            maxLength="4"
-                                        />
-                                    </div>
-                                </div>
-                            </div> */}
+
                         </div>
 
                         <div className="mb-8">
@@ -1041,38 +980,7 @@ const Payment = () => {
                     </div>
                 </div>
 
-                <div className="mb-8">
-                    {/* <h2 className="text-lg font-semibold mb-4">PAYMENT INFORMATION</h2> */}
-                    {clientSecret && stripePromise ? (
-                        <Elements
-                            stripe={stripePromise}
-                            options={{
-                                clientSecret,
-                                appearance: {
-                                    theme: 'stripe',
-                                    variables: {
-                                        colorPrimary: '#1B2C42',
-                                    },
-                                },
-                            }}
-                        >
-                            <PaymentForm
-                                bookingDetails={bookingDetails}
-                                reservationId={id}
-                            />
-                        </Elements>
-                    ) : (
-                        <div className="flex items-center justify-center p-6">
-                            {stripeError ? (
-                                <div className="text-red-600 bg-red-50 p-4 rounded-lg">
-                                    {stripeError}
-                                </div>
-                            ) : (
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                            )}
-                        </div>
-                    )}
-                </div>
+
             </main>
         </div>
     );

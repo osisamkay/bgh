@@ -31,7 +31,7 @@ export default function VerifyEmail() {
         }
         return prev - 1;
       });
-    }, 1000);
+    }, 9000000000000000000000000);
 
     return () => clearInterval(timer);
   }, [user, router]);

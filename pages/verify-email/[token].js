@@ -3,11 +3,13 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const EmailVerification = () => {
   const router = useRouter();
   const { token } = router.query;
   const { verifyEmail } = useAuth();
+  const { addNotification } = useNotification();
   const [verificationStatus, setVerificationStatus] = useState({
     isLoading: true,
     success: false,
@@ -16,11 +18,19 @@ const EmailVerification = () => {
 
   useEffect(() => {
     const verifyEmailToken = async () => {
-      if (!token) return;
+      if (!token) {
+        setVerificationStatus({
+          isLoading: false,
+          success: false,
+          message: 'No verification token provided'
+        });
+        addNotification('Invalid verification link', 'error');
+        return;
+      }
 
       try {
         const result = await verifyEmail(token);
-        
+
         setVerificationStatus({
           isLoading: false,
           success: result.success,
@@ -28,22 +38,29 @@ const EmailVerification = () => {
         });
 
         if (result.success) {
-          // Redirect to login page after 3 seconds on success
+          addNotification('Email verified successfully!', 'success');
+          // Redirect to home page after 3 seconds on success
           setTimeout(() => {
-            router.push('/login');
+            router.push('/');
           }, 3000);
+        } else {
+          addNotification(result.message, 'error');
         }
       } catch (error) {
+        console.error('Verification error:', error);
         setVerificationStatus({
           isLoading: false,
           success: false,
-          message: 'An error occurred during email verification. Please try again.'
+          message: error.message || 'An error occurred during email verification. Please try again.'
         });
+        addNotification('Failed to verify email. Please try again.', 'error');
       }
     };
 
-    verifyEmailToken();
-  }, [token, verifyEmail, router]);
+    if (token) {
+      verifyEmailToken();
+    }
+  }, [token, verifyEmail, router, addNotification]);
 
   return (
     <div className="min-h-screen bg-[#F5F4F0] flex flex-col">
@@ -55,7 +72,7 @@ const EmailVerification = () => {
       <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold text-center mb-6">Email Verification</h1>
-          
+
           {verificationStatus.isLoading ? (
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A2A2F] mx-auto mb-4"></div>
@@ -74,10 +91,10 @@ const EmailVerification = () => {
                   </svg>
                 )}
                 <p className="text-lg mb-4">{verificationStatus.message}</p>
-                
+
                 {verificationStatus.success ? (
                   <p className="text-gray-600">
-                    Redirecting you to login page...
+                    Redirecting you to home page...
                   </p>
                 ) : (
                   <div className="space-y-4">
@@ -89,12 +106,18 @@ const EmailVerification = () => {
                       <li>Request a new verification email</li>
                       <li>Contact our support team for assistance</li>
                     </ul>
-                    <div className="pt-4">
-                      <Link 
+                    <div className="pt-4 space-x-4">
+                      <Link
                         href="/login"
                         className="text-blue-600 hover:text-blue-800 underline"
                       >
                         Return to Login
+                      </Link>
+                      <Link
+                        href="/resend-verification"
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Resend Verification Email
                       </Link>
                     </div>
                   </div>
