@@ -51,7 +51,7 @@ jobs:
           SMTP_PASSWORD: "test"
           SMTP_FROM_EMAIL: "noreply@test.com"
           SMTP_SECURE: "false"
-          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_URL: "https://bghotel.vercel.app"
           NEXTAUTH_SECRET: "test_secret"
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
@@ -66,7 +66,7 @@ jobs:
           SMTP_PASSWORD: "test"
           SMTP_FROM_EMAIL: "noreply@test.com"
           SMTP_SECURE: "false"
-          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_URL: "https://bghotel.vercel.app"
           NEXTAUTH_SECRET: "test_secret"
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
