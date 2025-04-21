@@ -167,7 +167,7 @@ const UsersManager = ({ data, isLoading, error, onRefresh }) => {
             <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-semibold mb-4">User Management</h2>
                 <DataTable
-                    data={data || []}
+                    data={data?.data || []}
                     columns={columns}
                     pagination={true}
                     searchable={true}

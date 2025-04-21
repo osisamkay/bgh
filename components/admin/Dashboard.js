@@ -14,6 +14,7 @@ import LoadingSpinner from '../LoadingSpinner';
 import ErrorDisplay from '../ErrorDisplay';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import TransactionsManager from './TransactionManager';
 
 const AdminDashboard = () => {
   const router = useRouter();
@@ -88,7 +89,7 @@ const AdminDashboard = () => {
       <DashboardTabs
         selectedTab={selectedTab}
         onSelectTab={setSelectedTab}
-        tabs={['overview', 'bookings', 'users', 'reports', 'settings']}
+        tabs={['overview', 'bookings', 'users', 'transactions', 'reports', 'settings']}
       />
 
       {/* Tab Content */}
@@ -124,6 +125,8 @@ const AdminDashboard = () => {
           onRefresh={refetchUsers}
         />
       )}
+
+      {selectedTab === 'transactions' && <TransactionsManager />}
 
       {selectedTab === 'reports' && (
         <ReportsManager />
