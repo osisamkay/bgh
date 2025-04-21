@@ -17,18 +17,20 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Check for authenticated user but don't require it
+        let user = null;
         const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Authentication token is required' });
-        }
-
-        const user = await verifyToken(token);
-        if (!user || !user.id) {
-            return res.status(401).json({ error: 'Invalid token' });
+        if (token) {
+            try {
+                user = await verifyToken(token);
+            } catch (error) {
+                console.warn('Invalid token provided:', error.message);
+            }
         }
 
         const {
             roomId,
+            id,
             checkInDate,
             checkOutDate,
             numberOfGuests,
@@ -39,9 +41,15 @@ export default async function handler(req, res) {
             phone
         } = req.body;
 
-        // Validate required fields
-        if (!roomId || !checkInDate || !checkOutDate || !numberOfGuests || !termsAccepted) {
+        // Validate required fields - accept either roomId or id
+        const actualRoomId = roomId || id;
+        if (!actualRoomId || !checkInDate || !checkOutDate || !numberOfGuests || !termsAccepted) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Additional required fields for guest bookings
+        if (!user && (!fullName || !email || !phone)) {
+            return res.status(400).json({ error: 'Guest bookings require full name, email, and phone number' });
         }
 
         // Validate dates
@@ -57,8 +65,12 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Check-in date cannot be in the past' });
         }
 
+        // Format dates for Prisma query
+        const checkInISO = checkIn.toISOString();
+        const checkOutISO = checkOut.toISOString();
+
         // Check room availability
-        const cacheKey = `${roomId}-${checkInDate}-${checkOutDate}`;
+        const cacheKey = `${actualRoomId}-${checkInISO}-${checkOutISO}`;
         const cachedAvailability = roomAvailabilityCache.get(cacheKey);
 
         let isAvailable;
@@ -68,21 +80,21 @@ export default async function handler(req, res) {
             // Check for overlapping bookings
             const overlappingBookings = await prisma.booking.findMany({
                 where: {
-                    roomId,
+                    roomId: actualRoomId,
                     status: {
-                        in: ['confirmed', 'pending']
+                        in: ['CONFIRMED', 'PENDING'] // Also fixing status values to match enum
                     },
                     OR: [
                         {
                             checkInDate: {
-                                lt: checkOutDate,
-                                gte: checkInDate
+                                lt: checkOutISO,
+                                gte: checkInISO
                             }
                         },
                         {
                             checkOutDate: {
-                                gt: checkInDate,
-                                lte: checkOutDate
+                                gt: checkInISO,
+                                lte: checkOutISO
                             }
                         }
                     ]
@@ -100,21 +112,48 @@ export default async function handler(req, res) {
             return res.status(409).json({ error: 'Room is not available for the selected dates' });
         }
 
+        // Verify room exists
+        const room = await prisma.room.findUnique({
+            where: { id: actualRoomId }
+        });
+
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+
+        // Create guest user if not authenticated
+        let guestUser = null;
+        if (!user) {
+            guestUser = await prisma.user.create({
+                data: {
+                    email,
+                    name: fullName,
+                    phone,
+                    role: 'GUEST',
+                    metadata: {
+                        isTemporary: true,
+                        createdAt: new Date()
+                    }
+                }
+            });
+        }
+
         // Create pending reservation with timeout
         const reservation = await prisma.booking.create({
             data: {
-                roomId,
-                userId: user.id,
-                checkInDate,
-                checkOutDate,
+                roomId: actualRoomId,
+                userId: user?.id || guestUser.id,
+                checkInDate: checkInISO,
+                checkOutDate: checkOutISO,
                 numberOfGuests,
                 specialRequests,
-                status: 'pending',
+                status: 'PENDING',
                 createdAt: new Date(),
                 expiresAt: new Date(Date.now() + BOOKING_TIMEOUT),
                 metadata: {
                     timeoutDuration: BOOKING_TIMEOUT,
-                    retryCount: 0
+                    retryCount: 0,
+                    isGuestBooking: !user
                 }
             },
             include: {
@@ -125,11 +164,11 @@ export default async function handler(req, res) {
 
         // Send confirmation email
         const emailPreviewUrl = await sendEmail({
-            to: email,
+            to: email || user.email,
             subject: 'Booking Confirmation',
             html: `
                 <h2>Booking Confirmation</h2>
-                <p>Dear ${fullName},</p>
+                <p>Dear ${fullName || user.name},</p>
                 <p>Your booking has been created successfully.</p>
                 <h3>Booking Details:</h3>
                 <ul>
@@ -139,6 +178,7 @@ export default async function handler(req, res) {
                     <li>Number of Guests: ${numberOfGuests}</li>
                 </ul>
                 <p>Please complete your payment within 15 minutes to confirm your booking.</p>
+                ${!user ? '<p><strong>Note:</strong> A temporary guest account has been created for your booking.</p>' : ''}
             `
         });
 
@@ -151,7 +191,11 @@ export default async function handler(req, res) {
         });
     } catch (error) {
         console.error('Error creating reservation:', error);
-        return res.status(500).json({ error: 'Failed to create reservation' });
+        return res.status(500).json({
+            error: 'Failed to create reservation',
+            details: error.message,
+            code: error.code
+        });
     } finally {
         await prisma.$disconnect();
     }

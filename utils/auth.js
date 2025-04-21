@@ -118,6 +118,7 @@ export const verifyToken = async (token) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('JWT decoded:', decoded); // Debug log
 
     // Get user data
     const user = await prisma.user.findUnique({
@@ -129,13 +130,18 @@ export const verifyToken = async (token) => {
         lastName: true,
         name: true,
         role: true,
-        emailVerified: true
+        emailVerified: true,
+        phone: true
       }
     });
 
     if (!user) return null;
 
-    return user;
+    // Return both the decoded token and user data
+    return {
+      ...decoded,
+      ...user
+    };
   } catch (error) {
     console.error('Token verification error:', error);
     return null;
@@ -331,7 +337,8 @@ export const verifyRefreshToken = async (refreshToken) => {
         lastName: true,
         name: true,
         role: true,
-        emailVerified: true
+        emailVerified: true,
+        phone: true
       }
     });
 

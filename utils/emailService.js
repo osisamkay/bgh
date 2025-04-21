@@ -1,30 +1,35 @@
 // utils/emailService.js
 import nodemailer from 'nodemailer';
 
+// Function to create Ethereal test account
+const createEtherealAccount = async () => {
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    return {
+      user: testAccount.user,
+      pass: testAccount.pass
+    };
+  } catch (error) {
+    console.error('Error creating Ethereal account:', error);
+    throw error;
+  }
+};
+
 // Create transporter based on environment
-const getTransporter = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Production email settings
+const getTransporter = async () => {
+  try {
+    const credentials = await createEtherealAccount();
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: process.env.SMTP_SECURE === 'true',
+      host: 'smtp.ethereal.email',
+      port: 587,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: credentials.user,
+        pass: credentials.pass
       }
     });
-  } else {
-    // Development/testing email settings with preview
-    return nodemailer.createTransport({
-      host: process.env.TEST_SMTP_HOST || 'smtp.ethereal.email',
-      port: parseInt(process.env.TEST_SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.TEST_EMAIL_USER,
-        pass: process.env.TEST_EMAIL_PASS
-      }
-    });
+  } catch (error) {
+    console.error('Error creating email transporter:', error);
+    throw error;
   }
 };
 
@@ -37,7 +42,7 @@ const getAppUrl = (path) => {
 // Send verification email
 export const sendVerificationEmail = async ({ to, token, name }) => {
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     const verificationUrl = getAppUrl(`/verify-email?token=${token}`);
 
     const mailOptions = {
@@ -80,7 +85,7 @@ export const sendVerificationEmail = async ({ to, token, name }) => {
 // Send welcome email after verification
 export const sendWelcomeEmail = async ({ to, name }) => {
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     const loginUrl = getAppUrl('/login');
 
     const mailOptions = {
@@ -128,7 +133,7 @@ export const sendWelcomeEmail = async ({ to, name }) => {
 // Send password reset email
 export const sendPasswordResetEmail = async ({ to, token, name }) => {
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     const resetUrl = getAppUrl(`/reset-password?token=${token}`);
 
     const mailOptions = {
@@ -171,7 +176,7 @@ export const sendPasswordResetEmail = async ({ to, token, name }) => {
 // Send reservation confirmation email
 export const sendReservationConfirmationEmail = async ({ to, name, bookingDetails }) => {
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     const bookingUrl = getAppUrl(`/my-reservations`);
     const { bookingId, roomType, checkInDate, checkOutDate, totalPrice } = bookingDetails;
 

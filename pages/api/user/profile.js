@@ -17,8 +17,13 @@ export default async function handler(req, res) {
 
         // Verify token
         const decoded = await verifyToken(token);
-        if (!decoded) {
-            return res.status(401).json({ message: 'Invalid token' });
+        console.log('Decoded token:', decoded); // Debug log
+
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
         }
 
         // Get user profile
@@ -39,15 +44,26 @@ export default async function handler(req, res) {
                 emailVerified: true,
                 emailVerifiedAt: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                role: true
             }
         });
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
         }
 
-        return res.status(200).json(user);
+        // Log the user data for debugging
+        console.log('Found user:', user);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile fetched successfully',
+            user: user
+        });
     } catch (error) {
         console.error('Profile fetch error:', error);
         return res.status(500).json({ message: 'Error fetching user profile' });

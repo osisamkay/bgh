@@ -10,6 +10,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
@@ -446,7 +447,7 @@ export function AuthProvider({ children }) {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -463,7 +464,7 @@ export function AuthProvider({ children }) {
         };
       }
 
-      setUser(data.user);
+      setUserProfile(data.user);
 
       return {
         success: true,
@@ -490,6 +491,7 @@ export function AuthProvider({ children }) {
     verifyEmail,
     resetPassword,
     updateUser,
+    userProfile,
     fetchUserProfile,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'ADMIN'

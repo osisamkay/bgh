@@ -17,12 +17,36 @@ export default function RoomDetails() {
     checkOut: '',
     guests: 1
   });
-  const { user, fetchUserProfile } = useAuth();
+  const { user, userProfile, fetchUserProfile } = useAuth();
   const { addNotification } = useNotification();
 
   const { checkIn, checkOut, guests } = router.query;
 
-  console.log("efew", user, fetchUserProfile)
+  console.log("efew", userProfile)
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user && !userProfile) {
+        try {
+          await fetchUserProfile();
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user, userProfile, fetchUserProfile]);
+
+  // Add a separate effect to log profile changes
+  useEffect(() => {
+    console.log("Profile state updated:", {
+      user,
+      userProfile,
+      hasUser: !!user,
+      hasProfile: !!userProfile
+    });
+  }, [user, userProfile]);
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -114,7 +138,7 @@ export default function RoomDetails() {
     }
 
     // Validate required fields
-    if (!user.phone || user.phone.trim() === '') {
+    if (!userProfile?.phone || userProfile?.phone?.trim() === '') {
       addNotification('Please update your phone number in your profile before booking', 'error');
       router.push('/profile');
       return;
@@ -122,7 +146,7 @@ export default function RoomDetails() {
 
     // Validate phone number format
     const phoneRegex = /^\+?[\d\s-]{10,}$/;
-    if (!phoneRegex.test(user.phone)) {
+    if (!phoneRegex.test(userProfile?.phone)) {
       addNotification('Please enter a valid phone number with at least 10 digits in your profile', 'error');
       router.push('/profile');
       return;
@@ -156,7 +180,7 @@ export default function RoomDetails() {
           termsAccepted: true,
           fullName: `${user.firstName} ${user.lastName}`,
           email: user.email,
-          phone: user.phone
+          phone: userProfile?.phone
         })
       });
 

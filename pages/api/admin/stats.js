@@ -1,5 +1,5 @@
 // pages/api/admin/stats.js
-import { prisma } from '../../../lib/prisma';
+import prisma from '../../../lib/prisma';
 import { withAdminAuth } from '../../../lib/apiHandler';
 
 async function handler(req, res) {

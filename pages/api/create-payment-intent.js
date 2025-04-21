@@ -1,5 +1,5 @@
 import { verifyToken } from '../../utils/auth';
-import { prisma } from '../../lib/prisma';
+import prisma from '../../lib/prisma';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -10,8 +10,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log('Request body:', req.body);
-
         // Verify authentication
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
@@ -38,11 +36,12 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Amount exceeds maximum allowed value' });
         }
 
-        // Verify reservation exists and belongs to user
-        const reservation = await prisma.booking.findFirst({
+        // Verify booking exists and belongs to user
+        const booking = await prisma.booking.findFirst({
             where: {
                 id: reservationId,
-                userId: decoded.userId
+                userId: decoded.userId,
+                status: 'PENDING'
             },
             include: {
                 room: true,
@@ -50,56 +49,45 @@ export default async function handler(req, res) {
             }
         });
 
-        if (!reservation) {
-            return res.status(404).json({ error: 'Reservation not found' });
+        if (!booking) {
+            return res.status(404).json({ error: 'Booking not found or already paid' });
         }
 
         // Convert amount to cents and ensure it's an integer
         const amountInCents = Math.round(amount * 100);
 
-        console.log('Creating payment intent:', {
-            amountInCents,
-            currency: 'usd',
-            reservationId,
-            userId: decoded.userId
-        });
-
         // Create payment intent
         const paymentIntent = await stripe.paymentIntents.create({
             amount: amountInCents,
-            currency: 'usd',
+            currency: 'cad',
             metadata: {
-                reservationId,
+                bookingId: reservationId,
                 userId: decoded.userId
             },
             automatic_payment_methods: {
                 enabled: true
-            }
+            },
+            description: `Payment for booking ${reservationId}`,
+            receipt_email: booking.user.email
         });
-
-        console.log('Payment intent created:', paymentIntent.id);
 
         res.status(200).json({
-            clientSecret: paymentIntent.client_secret
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id
         });
     } catch (error) {
-        console.error('Detailed error:', {
-            message: error.message,
-            stack: error.stack,
-            type: error.type,
-            code: error.code,
-            param: error.param
-        });
+        console.error('Payment intent creation error:', error);
 
-        // Send more specific error messages
         if (error.type === 'StripeError') {
-            return res.status(400).json({ error: `Stripe error: ${error.message}` });
+            return res.status(400).json({
+                error: `Payment processing error: ${error.message}`,
+                code: error.code
+            });
         }
 
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'Database constraint violation' });
-        }
-
-        res.status(500).json({ error: `Payment intent creation failed: ${error.message}` });
+        res.status(500).json({
+            error: 'Failed to create payment intent',
+            details: error.message
+        });
     }
 } 

@@ -1,5 +1,5 @@
 // pages/api/admin/dashboard.js
-import { prisma } from '../../../lib/prisma';
+import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
 
 export default async function handler(req, res) {
@@ -136,16 +136,16 @@ export default async function handler(req, res) {
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
         const monthlyRevenue = await prisma.$queryRaw`
-      SELECT 
-        DATE_FORMAT(checkInDate, '%Y-%m') as month,
-        SUM(totalPrice) as revenue
-      FROM Booking
-      WHERE 
-        status = 'CONFIRMED' AND
-        checkInDate >= ${twelveMonthsAgo}
-      GROUP BY DATE_FORMAT(checkInDate, '%Y-%m')
-      ORDER BY month ASC
-    `;
+        SELECT 
+            strftime('%Y-%m', checkInDate) as month,
+            SUM(totalPrice) as revenue
+        FROM Booking
+        WHERE 
+            status = 'CONFIRMED' AND
+            checkInDate >= ${twelveMonthsAgo}
+        GROUP BY strftime('%Y-%m', checkInDate)
+        ORDER BY month ASC
+        `;
 
         // Return comprehensive dashboard data in one response
         return res.status(200).json({

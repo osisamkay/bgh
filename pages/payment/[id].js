@@ -25,6 +25,7 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState(null);
     const [isElementReady, setIsElementReady] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         if (!elements) {
@@ -42,6 +43,7 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
 
         if (!stripe || !elements || !isElementReady) {
             console.error('Stripe not initialized or elements not ready');
+            setPaymentError('Payment system is not ready. Please try again.');
             return;
         }
 
@@ -49,16 +51,23 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
         setPaymentError(null);
 
         try {
-            const { error } = await stripe.confirmPayment({
+            const { error, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
                     return_url: `${window.location.origin}/booking-confirmation/${reservationId}`,
                 },
+                redirect: 'if_required'
             });
 
             if (error) {
                 console.error('Payment error:', error);
                 setPaymentError(error.message || 'An error occurred during payment');
+                return;
+            }
+
+            if (paymentIntent && paymentIntent.status === 'succeeded') {
+                // Payment succeeded without redirect
+                router.push(`/booking-confirmation/${reservationId}`);
             }
         } catch (err) {
             console.error('Payment submission error:', err);
@@ -83,6 +92,15 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
                 <PaymentElement
                     onReady={() => setIsElementReady(true)}
                     className="p-4 border rounded-lg"
+                    options={{
+                        layout: 'tabs',
+                        defaultValues: {
+                            billingDetails: {
+                                email: bookingDetails?.user?.email || '',
+                                name: `${bookingDetails?.user?.firstName || ''} ${bookingDetails?.user?.lastName || ''}`.trim(),
+                            }
+                        }
+                    }}
                 />
             </div>
 
@@ -100,7 +118,7 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
                     : 'bg-[#1B2C42] hover:bg-opacity-90'
                     }`}
             >
-                {isProcessing ? 'Processing...' : `Pay $${bookingDetails.pricing.total.toFixed(2)}`}
+                {isProcessing ? 'Processing...' : `Pay $${bookingDetails?.pricing?.total?.toFixed(2) || '0.00'}`}
             </button>
         </form>
     );
@@ -108,7 +126,7 @@ const PaymentForm = ({ bookingDetails, reservationId }) => {
 
 const Payment = () => {
     const router = useRouter();
-    const { id } = router.query;
+    const { id, checkIn, checkOut, guests } = router.query;
     const { user, isLoading: authLoading } = useAuth();
     const { addNotification } = useNotification();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -166,16 +184,82 @@ const Payment = () => {
     const [currentImage, setCurrentImage] = useState('');
     const [bookingImages, setBookingImages] = useState([]);
 
-    // Check authentication status
+    // Generate token when user is logged in
     useEffect(() => {
-        if (!authLoading && !user) {
-            addNotification('Please log in to continue with payment', 'error');
-            router.push(`/login?redirect=/payment/${id}`);
+        const generateToken = async () => {
+            if (user && !localStorage.getItem('access_token')) {
+                try {
+                    console.log('Generating new token for logged-in user');
+                    const response = await fetch('/api/auth/refresh-token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            refreshToken: localStorage.getItem('refresh_token')
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to get token');
+                    }
+
+                    const data = await response.json();
+                    if (data.token) {
+                        localStorage.setItem('access_token', data.token);
+                        console.log('Token generated and stored successfully');
+                    }
+                } catch (error) {
+                    console.error('Error generating token:', error);
+                    const redirectUrl = `/payment/${id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`;
+                    localStorage.setItem('redirectAfterLogin', redirectUrl);
+                    router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+                }
+            }
+        };
+
+        generateToken();
+    }, [user, id, checkIn, checkOut, guests, router]);
+
+    // Debug auth state with more details
+    useEffect(() => {
+        console.log('Auth state details:', {
+            userExists: !!user,
+            userId: user?.id,
+            userEmail: user?.email,
+            authLoading,
+            hasToken: !!localStorage.getItem('access_token'),
+            token: localStorage.getItem('access_token'),
+            currentPath: router.asPath
+        });
+    }, [user, authLoading, router.asPath]);
+
+    // Check authentication status with more conditions
+    useEffect(() => {
+        // Don't redirect if still loading
+        if (authLoading) {
+            console.log('Auth still loading, waiting...');
             return;
         }
-    }, [user, authLoading, router, id, addNotification]);
 
-    // Fetch booking details
+        // Check if we have either user object or token
+        const hasAuth = user || localStorage.getItem('access_token');
+
+        if (!hasAuth) {
+            console.log('No auth found, redirecting to login');
+            const redirectUrl = `/payment/${id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`;
+            localStorage.setItem('redirectAfterLogin', redirectUrl);
+            addNotification('Please log in to continue with payment', 'error');
+            router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+        } else {
+            console.log('Auth found:', {
+                user: !!user,
+                token: !!localStorage.getItem('access_token')
+            });
+        }
+    }, [user, authLoading, router, id, checkIn, checkOut, guests, addNotification]);
+
+    // Fetch reservation details
     useEffect(() => {
         async function fetchReservationDetails() {
             if (!id || !user) {
@@ -184,10 +268,10 @@ const Payment = () => {
 
             try {
                 setIsLoading(true);
-                const token = localStorage.getItem('auth_token');
+                const token = localStorage.getItem('access_token');
 
                 if (!token) {
-                    throw new Error('No authentication token found');
+                    throw new Error('Please log in to continue with payment');
                 }
 
                 const response = await fetch(`/api/reservations/${id}`, {
@@ -202,6 +286,22 @@ const Payment = () => {
                 }
 
                 const data = await response.json();
+
+                // Validate reservation ownership
+                if (data.userId !== user.id) {
+                    throw new Error('This reservation does not belong to you');
+                }
+
+                // Validate reservation status
+                // if (data.status !== 'pending') {
+                //     if (data.status === 'paid') {
+                //         throw new Error('This reservation has already been paid');
+                //     } else if (data.status === 'cancelled') {
+                //         throw new Error('This reservation has been cancelled');
+                //     } else {
+                //         throw new Error(`This reservation cannot be paid (status: ${data.status})`);
+                //     }
+                // }
 
                 // Parse images array
                 let images = [];
@@ -277,14 +377,16 @@ const Payment = () => {
             } catch (error) {
                 console.error('Error fetching reservation details:', error);
                 addNotification(error.message || 'Failed to load reservation details', 'error');
-                router.push('/error');
+                setStripeError(error.message || 'Failed to load reservation details');
             } finally {
                 setIsLoading(false);
             }
         }
 
-        fetchReservationDetails();
-    }, [id, user, router, addNotification]);
+        if (id && user) {
+            fetchReservationDetails();
+        }
+    }, [id, user, addNotification]);
 
     useEffect(() => {
         if (user) {
@@ -423,7 +525,7 @@ const Payment = () => {
 
     const handlePaymentComplete = async (paymentIntent) => {
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('access_token');
             const response = await fetch(`/api/reservations/${id}/confirm-payment`, {
                 method: 'POST',
                 headers: {
@@ -447,41 +549,89 @@ const Payment = () => {
         }
     };
 
-    // Create payment intent
+    // Create payment intent with improved auth handling
     const createPaymentIntent = async (amount) => {
-        if (!user?.id) {
-            console.error('User ID is undefined');
+        console.log('Creating payment intent, checking auth...');
+
+        // Check auth state
+        const token = localStorage.getItem('access_token');
+        const hasAuth = user || token;
+
+        if (!hasAuth) {
+            console.error('No auth found when creating payment intent');
+            setStripeError('Please log in to continue with payment');
             return;
         }
 
         try {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                throw new Error('No authentication token found');
+            let currentToken = token;
+
+            // If we have a user but no token, try to get one
+            if (user && !currentToken) {
+                console.log('Getting new token for user');
+                try {
+                    const response = await fetch('/api/auth/refresh-token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            refreshToken: localStorage.getItem('refresh_token')
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to get token');
+                    }
+
+                    const data = await response.json();
+                    if (data.token) {
+                        currentToken = data.token;
+                        localStorage.setItem('access_token', currentToken);
+                    }
+                } catch (error) {
+                    console.error('Error getting token:', error);
+                }
             }
 
-            console.log('Creating payment intent with:', {
-                amount,
-                userId: user.id,
-                reservationId: id
+            // Final auth check
+            if (!currentToken && !user) {
+                console.error('Failed to get valid token');
+                setStripeError('Authentication failed. Please try logging in again.');
+                return;
+            }
+
+            console.log('Proceeding with payment intent creation:', {
+                hasUser: !!user,
+                hasToken: !!currentToken,
+                amount
             });
 
             const response = await fetch('/api/create-payment-intent', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${currentToken}`
                 },
                 body: JSON.stringify({
                     reservationId: id,
-                    amount: Math.round(amount * 100), // Convert to cents for Stripe
-                    userId: user.id
+                    amount: Math.round(amount * 100),
+                    userId: user?.id
                 })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
+                // If unauthorized, clear token and redirect to login
+                if (response.status === 401) {
+                    localStorage.removeItem('access_token');
+                    const redirectUrl = `/payment/${id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`;
+                    localStorage.setItem('redirectAfterLogin', redirectUrl);
+                    addNotification('Session expired. Please log in again.', 'error');
+                    router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+                    return;
+                }
                 throw new Error(data.error || 'Failed to create payment intent');
             }
 
@@ -495,7 +645,7 @@ const Payment = () => {
 
             setClientSecret(data.clientSecret);
         } catch (error) {
-            console.error('Error creating payment intent:', error);
+            console.error('Error in createPaymentIntent:', error);
             addNotification(error.message || 'Failed to initialize payment', 'error');
             setStripeError(error.message);
         }
@@ -508,6 +658,13 @@ const Payment = () => {
             console.error('Missing Stripe publishable key');
         }
     }, []);
+
+    // Create payment intent when booking details are loaded
+    useEffect(() => {
+        if (bookingDetails?.pricing?.total && !clientSecret) {
+            createPaymentIntent(bookingDetails.pricing.total);
+        }
+    }, [bookingDetails, clientSecret]);
 
     if (stripeError) {
         return (
@@ -796,7 +953,6 @@ const Payment = () => {
                         </div>
 
                         <div className="mb-8">
-                            {/* <h2 className="text-lg font-semibold mb-4">PAYMENT INFORMATION</h2> */}
                             {clientSecret && stripePromise ? (
                                 <Elements
                                     stripe={stripePromise}
@@ -806,6 +962,12 @@ const Payment = () => {
                                             theme: 'stripe',
                                             variables: {
                                                 colorPrimary: '#1B2C42',
+                                                colorBackground: '#ffffff',
+                                                colorText: '#30313d',
+                                                colorDanger: '#df1b41',
+                                                fontFamily: 'system-ui, sans-serif',
+                                                spacingUnit: '4px',
+                                                borderRadius: '4px',
                                             },
                                         },
                                     }}
@@ -829,29 +991,6 @@ const Payment = () => {
                             )}
                         </div>
 
-                        {/* <div className="space-y-4">
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="agreeToCancellation"
-                                    checked={formData.agreeToCancellation}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                I agree to the rate, room and cancellation policies of this booking
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="agreeToTerms"
-                                    checked={formData.agreeToTerms}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                I agree to the terms and conditions of this booking
-                            </label>
-                        </div> */}
-
                         <div className="mt-8 ">
                             <button
                                 onClick={() => router.back()}
@@ -859,12 +998,6 @@ const Payment = () => {
                             >
                                 RETURN TO PREVIOUS PAGE
                             </button>
-                            {/* <button
-                                onClick={handleSubmit}
-                                className="px-6 py-3 bg-[#1B2C42] text-white rounded hover:bg-opacity-90"
-                            >
-                                MAKE PAYMENT
-                            </button> */}
                         </div>
                         <p className="text-center mt-4 text-sm text-gray-600">
                             Clicking 'Make Payment' more than once may result in multiple bookings being made.
@@ -919,11 +1052,11 @@ const Payment = () => {
                         </div>
 
                         <div className="mb-6">
-                            <h2 className="text-xl font-bold mb-2">{bookingDetails.room.type}</h2>
-                            <p className="text-gray-600 mb-4">{bookingDetails.room.guests}</p>
+                            <h2 className="text-xl font-bold mb-2">{bookingDetails?.room?.type}</h2>
+                            <p className="text-gray-600 mb-4">{bookingDetails?.room?.guests}</p>
                             <h3 className="font-semibold mb-2">Amenities</h3>
                             <div className="grid grid-cols-2 gap-2">
-                                {bookingDetails.room.amenities.map((amenity, index) => (
+                                {bookingDetails?.room?.amenities?.map((amenity, index) => (
                                     <p key={index} className="text-sm text-gray-600">{amenity}</p>
                                 ))}
                             </div>
@@ -933,10 +1066,10 @@ const Payment = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="text-center">
                                     <p className="text-sm text-gray-600">CHECK-IN</p>
-                                    <p className="font-bold">{bookingDetails.checkIn.time}</p>
-                                    <p className="text-lg">{bookingDetails.checkIn.date}</p>
-                                    <p className="text-3xl font-bold">{bookingDetails.checkIn.day}</p>
-                                    <p className="text-sm">{bookingDetails.checkIn.month} {bookingDetails.checkIn.year}</p>
+                                    <p className="font-bold">{bookingDetails?.checkIn?.time}</p>
+                                    <p className="text-lg">{bookingDetails?.checkIn?.date}</p>
+                                    <p className="text-3xl font-bold">{bookingDetails?.checkIn?.day}</p>
+                                    <p className="text-sm">{bookingDetails?.checkIn?.month} {bookingDetails?.checkIn?.year}</p>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm text-gray-600">CHECK-OUT</p>

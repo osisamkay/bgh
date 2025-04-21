@@ -36,10 +36,11 @@ const DataTable = ({
         })
         : data;
 
-    // Handle pagination
+    const safeFilteredData = Array.isArray(filteredData) ? filteredData : [];
+
     const paginatedData = pagination
-        ? filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-        : filteredData;
+        ? safeFilteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        : safeFilteredData;
 
     // Handle sorting
     const sortedData = sortColumn
