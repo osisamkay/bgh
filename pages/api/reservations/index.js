@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { verifyToken } from '@/utils/auth';
 import { sendEmail } from '@/utils/email';
+import { getReservationConfirmationTemplate } from '@/utils/emailTemplates';
 
 const prisma = new PrismaClient();
 
@@ -208,24 +209,27 @@ export default async function handler(req, res) {
             try {
                 const emailResult = await sendEmail({
                     to: email || user.email,
-                    subject: 'Booking Confirmation',
-                    html: `
-                        <h2>Booking Confirmation</h2>
-                        <p>Dear ${fullName || user.name},</p>
-                        <p>Your booking has been created successfully.</p>
-                        <h3>Booking Details:</h3>
-                        <ul>
-                            <li>Room Type: ${reservation.room.type}</li>
-                            <li>Room Number: ${reservation.room.roomNumber}</li>
-                            <li>Check-in Date: ${new Date(checkInDate).toLocaleDateString()}</li>
-                            <li>Check-out Date: ${new Date(checkOutDate).toLocaleDateString()}</li>
-                            <li>Number of Guests: ${parsedGuests}</li>
-                            <li>Total Price: $${totalPrice.toFixed(2)}</li>
-                            <li>Duration: ${numberOfNights} night${numberOfNights > 1 ? 's' : ''}</li>
-                        </ul>
-                        <p>Please complete your payment within 15 minutes to confirm your booking.</p>
-                        ${!user ? '<p><strong>Note:</strong> A temporary guest account has been created for your booking.</p>' : ''}
-                    `
+                    subject: 'Reservation Confirmation - Best Garden Hotel',
+                    html: getReservationConfirmationTemplate({
+                        name: fullName || user.name,
+                        roomType: reservation.room.type,
+                        checkIn: new Date(checkInDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }),
+                        checkOut: new Date(checkOutDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }),
+                        guests: parsedGuests,
+                        totalPrice: totalPrice.toFixed(2),
+                        reservationId: reservation.id,
+                        specialRequests: specialRequests?.trim() || undefined
+                    })
                 });
 
                 return res.status(201).json({
