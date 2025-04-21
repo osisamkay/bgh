@@ -57,12 +57,22 @@ export default async function handler(req, res) {
         const checkOut = new Date(checkOutDate);
         const now = new Date();
 
+        if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
+
         if (checkIn >= checkOut) {
             return res.status(400).json({ error: 'Check-out date must be after check-in date' });
         }
 
         if (checkIn < now) {
             return res.status(400).json({ error: 'Check-in date cannot be in the past' });
+        }
+
+        // Validate number of guests
+        const parsedGuests = parseInt(numberOfGuests);
+        if (isNaN(parsedGuests) || parsedGuests < 1) {
+            return res.status(400).json({ error: 'Number of guests must be at least 1' });
         }
 
         // Format dates for Prisma query
@@ -121,74 +131,131 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'Room not found' });
         }
 
-        // Create guest user if not authenticated
+        // Calculate total price based on number of nights
+        const numberOfNights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+        const totalPrice = room.price * numberOfNights;
+
+        // Create or update guest user if not authenticated
         let guestUser = null;
         if (!user) {
-            guestUser = await prisma.user.create({
-                data: {
-                    email,
-                    name: fullName,
-                    phone,
-                    role: 'GUEST',
-                    metadata: {
-                        isTemporary: true,
-                        createdAt: new Date()
-                    }
+            // Validate guest information
+            if (!email?.includes('@') || !fullName?.trim() || !phone?.trim()) {
+                return res.status(400).json({ error: 'Invalid guest information provided' });
+            }
+
+            try {
+                // Check if guest user already exists
+                guestUser = await prisma.user.findUnique({
+                    where: { email: email.toLowerCase() }
+                });
+
+                // Create new guest user if doesn't exist
+                if (!guestUser) {
+                    guestUser = await prisma.user.create({
+                        data: {
+                            email: email.toLowerCase(),
+                            name: fullName.trim(),
+                            phone: phone.trim(),
+                            role: 'GUEST',
+                            password: '',
+                            termsAccepted: true,
+                            metadata: JSON.stringify({
+                                isTemporary: true,
+                                createdAt: new Date().toISOString()
+                            })
+                        }
+                    });
+                } else {
+                    // Update existing guest user's information
+                    guestUser = await prisma.user.update({
+                        where: { email: email.toLowerCase() },
+                        data: {
+                            name: fullName.trim(),
+                            phone: phone.trim(),
+                            metadata: JSON.stringify({
+                                isTemporary: true,
+                                updatedAt: new Date().toISOString()
+                            })
+                        }
+                    });
                 }
-            });
+            } catch (error) {
+                console.error('Error handling guest user:', error);
+                return res.status(500).json({ error: 'Failed to process guest information' });
+            }
         }
 
-        // Create pending reservation with timeout
-        const reservation = await prisma.booking.create({
-            data: {
-                roomId: actualRoomId,
-                userId: user?.id || guestUser.id,
-                checkInDate: checkInISO,
-                checkOutDate: checkOutISO,
-                numberOfGuests,
-                specialRequests,
-                status: 'PENDING',
-                createdAt: new Date(),
-                expiresAt: new Date(Date.now() + BOOKING_TIMEOUT),
-                metadata: {
-                    timeoutDuration: BOOKING_TIMEOUT,
-                    retryCount: 0,
-                    isGuestBooking: !user
+        // Create pending reservation
+        try {
+            const reservation = await prisma.booking.create({
+                data: {
+                    roomId: actualRoomId,
+                    userId: user?.id || guestUser.id,
+                    checkInDate: checkInISO,
+                    checkOutDate: checkOutISO,
+                    numberOfGuests: parsedGuests,
+                    specialRequests: specialRequests?.trim() || '',
+                    status: 'PENDING',
+                    totalPrice
+                },
+                include: {
+                    room: true,
+                    user: true
                 }
-            },
-            include: {
-                room: true,
-                user: true
-            }
-        });
+            });
 
-        // Send confirmation email
-        const emailPreviewUrl = await sendEmail({
-            to: email || user.email,
-            subject: 'Booking Confirmation',
-            html: `
-                <h2>Booking Confirmation</h2>
-                <p>Dear ${fullName || user.name},</p>
-                <p>Your booking has been created successfully.</p>
-                <h3>Booking Details:</h3>
-                <ul>
-                    <li>Room Type: ${reservation.room.type}</li>
-                    <li>Check-in Date: ${new Date(checkInDate).toLocaleDateString()}</li>
-                    <li>Check-out Date: ${new Date(checkOutDate).toLocaleDateString()}</li>
-                    <li>Number of Guests: ${numberOfGuests}</li>
-                </ul>
-                <p>Please complete your payment within 15 minutes to confirm your booking.</p>
-                ${!user ? '<p><strong>Note:</strong> A temporary guest account has been created for your booking.</p>' : ''}
-            `
-        });
+            // Send confirmation email
+            try {
+                const emailResult = await sendEmail({
+                    to: email || user.email,
+                    subject: 'Booking Confirmation',
+                    html: `
+                        <h2>Booking Confirmation</h2>
+                        <p>Dear ${fullName || user.name},</p>
+                        <p>Your booking has been created successfully.</p>
+                        <h3>Booking Details:</h3>
+                        <ul>
+                            <li>Room Type: ${reservation.room.type}</li>
+                            <li>Room Number: ${reservation.room.roomNumber}</li>
+                            <li>Check-in Date: ${new Date(checkInDate).toLocaleDateString()}</li>
+                            <li>Check-out Date: ${new Date(checkOutDate).toLocaleDateString()}</li>
+                            <li>Number of Guests: ${parsedGuests}</li>
+                            <li>Total Price: $${totalPrice.toFixed(2)}</li>
+                            <li>Duration: ${numberOfNights} night${numberOfNights > 1 ? 's' : ''}</li>
+                        </ul>
+                        <p>Please complete your payment within 15 minutes to confirm your booking.</p>
+                        ${!user ? '<p><strong>Note:</strong> A temporary guest account has been created for your booking.</p>' : ''}
+                    `
+                });
 
-        return res.status(201).json({
-            message: 'Reservation created successfully',
-            reservation,
-            emailDetails: {
-                previewUrl: emailPreviewUrl
+                return res.status(201).json({
+                    message: 'Reservation created successfully',
+                    reservation,
+                    emailDetails: {
+                        success: emailResult.success,
+                        previewUrl: emailResult.previewUrl,
+                        messageId: emailResult.messageId
+                    }
+                });
+            } catch (error) {
+                console.error('Error sending email:', error);
+                // Still return success even if email fails
+                return res.status(201).json({
+                    message: 'Reservation created successfully, but confirmation email could not be sent',
+                    reservation,
+                    emailDetails: {
+                        success: false,
+                        error: error.message
+                    }
+                });
             }
-        });
+        } catch (error) {
+            console.error('Error creating reservation:', error);
+            return res.status(500).json({
+                error: 'Failed to create reservation',
+                details: error.message
+            });
+        }
     } catch (error) {
         console.error('Error creating reservation:', error);
         return res.status(500).json({

@@ -147,7 +147,10 @@ const ReservationForm = ({ room, onReservationComplete }) => {
       }
 
       addNotification(data.details || 'Reservation created successfully!', 'success');
-      onReservationComplete(data.reservation, data.emailPreviewUrl);
+      // Extract preview URL from emailDetails
+      const previewUrl = data.emailDetails?.previewUrl;
+      console.log('Email preview URL:', previewUrl); // Debug log
+      onReservationComplete(data.reservation, previewUrl);
     } catch (error) {
       addNotification('An error occurred while creating your reservation', 'error');
     } finally {

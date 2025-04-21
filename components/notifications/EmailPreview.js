@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function EmailPreview({ previewUrl, onClose }) {
+export default function EmailPreview({ previewUrl, onClose, reservationId }) {
   const [isVisible, setIsVisible] = useState(true);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
 
@@ -52,9 +52,9 @@ export default function EmailPreview({ previewUrl, onClose }) {
           <div className="p-4 sm:p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="flex-shrink-0 bg-blue-50 p-1.5 sm:p-2 rounded-lg">
+                <div className="flex-shrink-0 bg-amber-50 p-1.5 sm:p-2 rounded-lg">
                   <svg
-                    className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600"
+                    className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -69,10 +69,10 @@ export default function EmailPreview({ previewUrl, onClose }) {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                    Email Preview Available
+                    Reservation Confirmation
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
-                    View your confirmation email
+                    Reservation ID: {reservationId}
                   </p>
                 </div>
               </div>
@@ -98,9 +98,9 @@ export default function EmailPreview({ previewUrl, onClose }) {
             <div className="space-y-3 sm:space-y-4">
               <button
                 onClick={handlePreviewClick}
-                className="w-full bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="w-full bg-amber-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors duration-200 flex items-center justify-center space-x-2"
               >
-                <span>View Email Preview</span>
+                <span>View Confirmation Email</span>
                 <svg
                   className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
@@ -130,7 +130,7 @@ export default function EmailPreview({ previewUrl, onClose }) {
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span>Closes in {formatTime(timeLeft)}</span>
+                <span>Preview expires in {formatTime(timeLeft)}</span>
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function EmailPreview({ previewUrl, onClose }) {
           {/* Progress bar */}
           <div className="h-0.5 sm:h-1 bg-gray-100">
             <div
-              className="h-full bg-blue-600 transition-all duration-1000 ease-linear"
+              className="h-full bg-amber-600 transition-all duration-1000 ease-linear"
               style={{ width: `${(timeLeft / 300) * 100}%` }}
             />
           </div>

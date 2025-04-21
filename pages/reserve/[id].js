@@ -127,14 +127,16 @@ export default function ReservationPage() {
       }
 
       const data = await response.json();
-      console.log('Reservation response:', data); // Debug log
+      console.log('Reservation response:', data, 'emailDetails:', data.emailDetails); // Debug log
       setReservation(data.reservation);
-      if (data.emailPreviewUrl) {
-        setEmailPreviewUrl(data.emailPreviewUrl);
-        // Clear email preview after 30 seconds
-        setTimeout(() => setEmailPreviewUrl(null), 30000);
-      }
+      const previewUrl = data.emailDetails?.previewUrl;
+      setEmailPreviewUrl(previewUrl);
       addNotification('Reservation created successfully!', 'success');
+
+      // Call onReservationComplete with the correct data
+      if (typeof onReservationComplete === 'function') {
+        onReservationComplete(data.reservation, previewUrl);
+      }
     } catch (error) {
       setError(error.message);
       addNotification(error.message, 'error');
@@ -186,11 +188,11 @@ export default function ReservationPage() {
                     {room.capacity} {room.capacity === 1 ? 'ADULT' : 'ADULTS'}
                   </div>
                 </div>
-                
+
                 <p className="mt-4 text-gray-700">{room.description}</p>
-                
+
                 <p className="mt-6 text-2xl font-bold">${room.price} / night</p>
-                
+
                 <div className="mt-4">
                   <Link href={`/room/${id}`} className="text-blue-600 hover:underline">
                     Change selection
@@ -204,11 +206,11 @@ export default function ReservationPage() {
           <div className="w-full lg:w-[900px]">
             <div className="bg-white rounded-lg">
               <h2 className="text-2xl font-bold mb-8">Complete your Reservation</h2>
-              
+
               {reservation ? (
-                <ReservationSuccess 
-                  reservation={reservation} 
-                  emailPreviewUrl={emailPreviewUrl}
+                <ReservationSuccess
+                  reservation={reservation}
+                  emailDetails={{ previewUrl: emailPreviewUrl }}
                 />
               ) : (
                 <ReservationForm
@@ -219,6 +221,7 @@ export default function ReservationPage() {
                   isSubmitting={isSubmitting}
                   error={error}
                   onReservationComplete={(reservationData, previewUrl) => {
+                    console.log('Preview URL:', previewUrl);
                     setReservation(reservationData);
                     if (previewUrl) {
                       setEmailPreviewUrl(previewUrl);
@@ -237,6 +240,7 @@ export default function ReservationPage() {
           <EmailPreview
             previewUrl={emailPreviewUrl}
             onClose={() => setEmailPreviewUrl(null)}
+            reservationId={reservation?.id}
           />
         )}
       </main>
