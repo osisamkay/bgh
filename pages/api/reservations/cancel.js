@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import { sendEmail } from '../../../utils/email';
 
 const prisma = new PrismaClient();

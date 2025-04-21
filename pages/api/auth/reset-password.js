@@ -1,80 +1,56 @@
 // pages/api/auth/reset-password.js
-import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import { prisma } from '../../../lib/prisma';
+import { hash } from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
     const { token, password } = req.body;
 
     if (!token || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Token and new password are required'
-      });
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Validate password strength
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters long'
-      });
-    }
-
-    // Hash the token to compare with stored hash
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    // Find the reset token in database
-    const resetToken = await prisma.resetPasswordToken.findFirst({
-      where: {
-        token: hashedToken,
-        expiresAt: {
-          gt: new Date()
-        }
-      }
+    // Find the reset token and check if it's valid
+    const resetToken = await prisma.resetPasswordToken.findUnique({
+      where: { token },
+      include: { user: true },
     });
 
     if (!resetToken) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired password reset token'
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Check if token is expired (24 hours)
+    const tokenAge = Date.now() - resetToken.createdAt.getTime();
+    if (tokenAge > 24 * 60 * 60 * 1000) {
+      // Delete expired token
+      await prisma.resetPasswordToken.delete({
+        where: { id: resetToken.id },
       });
+      return res.status(400).json({ message: 'Reset token has expired' });
     }
 
     // Hash the new password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await hash(password, 12);
 
-    // Update user's password
-    await prisma.user.update({
-      where: { id: resetToken.userId },
-      data: {
-        password: hashedPassword
-      }
-    });
+    // Update user's password and delete the reset token
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      prisma.resetPasswordToken.delete({
+        where: { id: resetToken.id },
+      }),
+    ]);
 
-    // Delete all reset tokens for this user
-    await prisma.resetPasswordToken.deleteMany({
-      where: { userId: resetToken.userId }
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Password has been reset successfully. You can now log in with your new password.'
-    });
+    return res.status(200).json({ message: 'Password reset successful' });
   } catch (error) {
     console.error('Password reset error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An error occurred during password reset. Please try again.'
-    });
+    return res.status(500).json({ message: 'Failed to reset password' });
   }
 }

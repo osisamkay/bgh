@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 import ReportService from '@/utils/reportService';
 
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !['ADMIN', 'MANAGER'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -56,7 +56,7 @@ export async function POST(req) {
     // If export is requested
     if (format) {
       const exportData = await ReportService.exportReport(report, format, filters);
-      
+
       // Log the export activity
       await ReportService.logReportActivity(
         session.user.id,
