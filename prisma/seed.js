@@ -71,6 +71,20 @@ async function main() {
     }
   });
 
+  // Create initial settings
+  const settings = await prisma.setting.create({
+    data: {
+      id: 1,
+      emailNotifications: true,
+      maintenanceMode: false,
+      maxBookingsPerUser: 5,
+      cancellationPolicy: '24 hours',
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      updatedAt: new Date()
+    }
+  });
+
   // Create rooms
   const rooms = [
     {
