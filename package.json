@@ -6,6 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
+    "test-db": "node -r @babel/register scripts/test-db.js",
     "reset-db": "taskkill /F /IM node.exe && del prisma\\dev.db && npx prisma migrate reset --force"
   },
   "keywords": [],
@@ -42,6 +44,8 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/register": "^7.25.9",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "10.4.16",
     "postcss": "8.4.31",
