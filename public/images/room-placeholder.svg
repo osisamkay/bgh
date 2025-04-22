@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" version="1.1" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#f0f0f0"/>
+  <g transform="translate(300,200)" fill="#999">
+    <path d="M100 0 L200 100 L200 200 L0 200 L0 100 Z" />
+    <rect x="80" y="120" width="40" height="80"/>
+  </g>
+  <text x="400" y="450" text-anchor="middle" font-family="Arial" font-size="24" fill="#666">
+    No Image Available
+  </text>
+</svg> 

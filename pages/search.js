@@ -62,11 +62,16 @@ export default function Search() {
           throw new Error('Failed to fetch rooms');
         }
         const data = await response.json();
-        setAllRooms(data);
-        setFilteredRooms(data);
+
+        // Initialize with empty arrays if data is undefined
+        const roomsData = data?.data || [];
+        setAllRooms(roomsData);
+        setFilteredRooms(roomsData);
 
         // Set max price from fetched rooms
-        const maxPrice = Math.max(...data.map(room => room.price));
+        const maxPrice = roomsData.length > 0
+          ? Math.max(...roomsData.map(room => room.price))
+          : 0;
         setPriceRange([0, maxPrice]);
 
         setIsLoading(false);
@@ -81,18 +86,48 @@ export default function Search() {
   }, []);
 
   // Calculate max price from filtered rooms
-  const maxPrice = Math.max(...filteredRooms.map(room => room.price), 0);
+  const maxPrice = filteredRooms && filteredRooms.length > 0
+    ? Math.max(...filteredRooms.map(room => room.price))
+    : 0;
 
-  // Separate handlers for min and max price
-  const handleMinPriceChange = (e) => {
-    const value = Math.min(Number(e.target.value), priceRange[1] - 1);
-    setPriceRange([value, priceRange[1]]);
-  };
+  // Filter rooms by price and other criteria
+  useEffect(() => {
+    if (!allRooms || allRooms.length === 0) return;
 
-  const handleMaxPriceChange = (e) => {
-    const value = Math.max(Number(e.target.value), priceRange[0] + 1);
-    setPriceRange([priceRange[0], value]);
-  };
+    let results = [...allRooms];
+
+    // Filter by room types if any selected
+    if (selectedRoomTypes.length > 0) {
+      results = results.filter(room => {
+        const roomType = room.type.toLowerCase();
+        return selectedRoomTypes.includes(roomType);
+      });
+    }
+
+    // Filter by amenities if any selected
+    if (selectedAmenities.length > 0) {
+      results = results.filter(room => {
+        const roomAmenities = JSON.parse(room.amenities || '[]');
+        return selectedAmenities.every(amenity =>
+          roomAmenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))
+        );
+      });
+    }
+
+    // Filter by price range
+    results = results.filter(room =>
+      room.price >= priceRange[0] && room.price <= priceRange[1]
+    );
+
+    // Sort results
+    if (sortOption === 'Price (Low to High)') {
+      results.sort((a, b) => a.price - b.price);
+    } else if (sortOption === 'Price (High to Low)') {
+      results.sort((a, b) => b.price - a.price);
+    }
+
+    setFilteredRooms(results);
+  }, [selectedRoomTypes, selectedAmenities, priceRange, sortOption, allRooms]);
 
   // Read query parameters when the router is ready
   useEffect(() => {
@@ -112,44 +147,6 @@ export default function Search() {
       setNights(updatedNights);
     }
   }, [checkInDate, checkOutDate]);
-
-  // Filter rooms by price and other criteria
-  useEffect(() => {
-    if (allRooms.length === 0) return;
-
-    let results = [...allRooms];
-
-    // Filter by room types if any selected
-    if (selectedRoomTypes.length > 0) {
-      results = results.filter(room => {
-        const roomType = room.type.toLowerCase();
-        return selectedRoomTypes.includes(roomType);
-      });
-    }
-
-    // Filter by amenities if any selected
-    if (selectedAmenities.length > 0) {
-      results = results.filter(room =>
-        selectedAmenities.every(amenity =>
-          room.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))
-        )
-      );
-    }
-
-    // Filter by price range
-    results = results.filter(room =>
-      room.price >= priceRange[0] && room.price <= priceRange[1]
-    );
-
-    // Sort results
-    if (sortOption === 'Price (Low to High)') {
-      results.sort((a, b) => a.price - b.price);
-    } else if (sortOption === 'Price (High to Low)') {
-      results.sort((a, b) => b.price - a.price);
-    }
-
-    setFilteredRooms(results);
-  }, [selectedRoomTypes, selectedAmenities, priceRange, sortOption, allRooms]);
 
   // Handle clicks outside the date picker
   useEffect(() => {
@@ -256,6 +253,10 @@ export default function Search() {
       if (response.ok) {
         setNotificationStatus('success');
         setEmail('');
+        // Store the preview URL in state
+        if (data.emailPreview) {
+          window.open(data.emailPreview, '_blank');
+        }
       } else {
         setNotificationStatus('error');
       }
@@ -627,7 +628,7 @@ export default function Search() {
             {/* Sort Options */}
             <div className="flex justify-between items-center mb-4">
               <p className="text-sm text-gray-600">
-                {filteredRooms.length} {filteredRooms.length === 1 ? 'room' : 'rooms'} found
+                {filteredRooms?.length} {filteredRooms?.length === 1 ? 'room' : 'rooms'} found
               </p>
               <div className="flex items-center">
                 <span className="mr-2 text-sm">Sort by</span>
@@ -651,8 +652,8 @@ export default function Search() {
 
             {/* Dynamically Generated Room Results */}
             <div className="space-y-6">
-              {filteredRooms.length > 0 ? (
-                filteredRooms.map((room) => (
+              {filteredRooms?.length > 0 ? (
+                filteredRooms?.map((room) => (
                   <div key={room.id} className="flex flex-col bg-white border rounded-lg overflow-hidden mb-6">
                     <div className="flex gap-6 p-4">
                       {/* Room Image */}
@@ -661,7 +662,7 @@ export default function Search() {
                         onClick={() => handleRoomSelect(room)}
                       >
                         <Image
-                          src={room.image}
+                          src={room.images?.[0] || '/images/room-placeholder.jpg'}
                           alt={room.type}
                           fill
                           style={{ objectFit: 'cover' }}

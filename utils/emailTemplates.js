@@ -198,15 +198,15 @@ export const getWelcomeEmailTemplate = ({ name }) => `
 `;
 
 // Reservation confirmation template
-export const getReservationConfirmationTemplate = ({ 
-  name, 
-  roomType, 
-  checkIn, 
-  checkOut, 
-  guests, 
+export const getReservationConfirmationTemplate = ({
+  name,
+  roomType,
+  checkIn,
+  checkOut,
+  guests,
   totalPrice,
   reservationId,
-  specialRequests 
+  specialRequests
 }) => `
   <!DOCTYPE html>
   <html>
@@ -327,4 +327,92 @@ export const getPasswordResetTemplate = ({ name, resetUrl }) => `
       </div>
     </body>
   </html>
+`;
+
+export const getSubscriptionConfirmationTemplate = ({ email, priceRange, roomType }) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #1a2b3b;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+    }
+    .content {
+      background-color: #f9fafb;
+      padding: 20px;
+      border-radius: 0 0 8px 8px;
+      border: 1px solid #e5e7eb;
+    }
+    .criteria {
+      background-color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border: 1px solid #e5e7eb;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .button {
+      background-color: #d4af37;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Price Alert Subscription Confirmed</h2>
+  </div>
+  <div class="content">
+    <p>Thank you for subscribing to our price alerts! We'll notify you when rooms matching your criteria become available.</p>
+    
+    <div class="criteria">
+      <h3>Your Alert Criteria:</h3>
+      <ul>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Price Range:</strong> $${priceRange[0]} - $${priceRange[1]}</li>
+        ${roomType ? `<li><strong>Room Type:</strong> ${roomType}</li>` : ''}
+      </ul>
+    </div>
+
+    <p>You'll receive notifications when:</p>
+    <ul>
+      <li>Rooms within your price range become available</li>
+      <li>Special deals match your criteria</li>
+      <li>New rooms matching your preferences are added</li>
+    </ul>
+
+    <a href="https://bgh-i2ok92o5y-osisamkays-projects.vercel.app/search" class="button">
+      View Available Rooms
+    </a>
+
+    <p>You can update your preferences or unsubscribe at any time by visiting your account settings.</p>
+  </div>
+  
+  <div class="footer">
+    <p>Best Garden Hotel<br>
+    Your comfort is our priority</p>
+  </div>
+</body>
+</html>
 `; 

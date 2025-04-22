@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sendEmail } from '@/utils/email';
+import { getSubscriptionConfirmationTemplate } from '@/utils/emailTemplates';
 
 export async function POST(req) {
   try {
@@ -23,24 +24,21 @@ export async function POST(req) {
       }
     });
 
-    // Send confirmation email
-    await sendEmail({
+    // Send confirmation email with the new template
+    const emailResult = await sendEmail({
       to: email,
       subject: 'Hotel Price Alert Subscription Confirmed',
-      html: `
-        <h2>Thank you for subscribing to price alerts!</h2>
-        <p>We'll notify you when rooms matching your criteria become available:</p>
-        <ul>
-          <li>Price Range: $${priceRange[0]} - $${priceRange[1]}</li>
-          ${roomType ? `<li>Room Type: ${roomType}</li>` : ''}
-        </ul>
-        <p>Best regards,<br>Best Garden Hotel</p>
-      `
+      html: getSubscriptionConfirmationTemplate({ email, priceRange, roomType })
     });
 
     return NextResponse.json({
       message: 'Subscription successful',
-      subscription
+      subscription,
+      emailPreview: emailResult.previewUrl,
+      etherealCredentials: {
+        user: emailResult.etherealUser,
+        pass: emailResult.etherealPass
+      }
     });
   } catch (error) {
     console.error('Subscription error:', error);
