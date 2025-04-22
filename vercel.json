@@ -20,5 +20,10 @@
         "env": {
             "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@next_public_stripe_publishable_key"
         }
+    },
+    "git": {
+        "deploymentEnabled": {
+            "main": true
+        }
     }
 }
