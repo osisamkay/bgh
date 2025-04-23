@@ -13,6 +13,7 @@ export default function MyReservations() {
   const { addNotification } = useNotification();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const checkAuthAndFetch = async () => {
@@ -28,11 +29,6 @@ export default function MyReservations() {
 
   const fetchReservations = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const response = await fetch('/api/reservations/my-reservations', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -46,10 +42,12 @@ export default function MyReservations() {
       const data = await response.json();
       if (data.success) {
         setReservations(data.reservations);
+      } else {
+        throw new Error(data.message || 'Failed to fetch reservations');
       }
     } catch (error) {
       console.error('Error fetching reservations:', error);
-      addNotification('Failed to load reservations', 'error');
+      setError('Failed to load reservations');
     } finally {
       setLoading(false);
     }
@@ -77,12 +75,15 @@ export default function MyReservations() {
   };
 
   const formatDate = (dateString) => {
+    console.log('Raw date string:', dateString);
+    if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric'
-    });
+    console.log('Parsed date:', date);
+    if (isNaN(date.getTime())) {
+      console.log('Invalid date detected');
+      return '';
+    }
+    return date.toISOString().split('T')[0];
   };
 
   const getStatusColor = (status) => {
@@ -152,12 +153,17 @@ export default function MyReservations() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
           {reservations.map((reservation) => (
+            console.log('Reservation dates:', {
+              checkIn: reservation.checkInDate,
+              checkOut: reservation.checkOutDate,
+              raw: reservation
+            }),
             <div
               key={reservation.id}
               className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
             >
               <div className="flex flex-col lg:flex-row">
-                <div className="w-full lg:w-1/3 relative">
+                {/* <div className="w-full lg:w-1/3 relative">
                   {reservation.room?.image && reservation.room.image.startsWith('/') ? (
                     <div className="relative h-64 lg:h-full">
                       <Image
@@ -175,7 +181,7 @@ export default function MyReservations() {
                       </svg>
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 <div className="flex-1 p-6">
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -222,7 +228,7 @@ export default function MyReservations() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-sm text-gray-500 mb-1">Booking ID</p>
                       <p className="font-medium text-gray-900 font-mono">
-                        {reservation.id.slice(0, 8)}
+                        {reservation.id}
                       </p>
                     </div>
                   </div>
@@ -237,21 +243,33 @@ export default function MyReservations() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                    {reservation.status.toUpperCase() === 'CONFIRMED' && (
-                      <button
-                        onClick={() => handleCancelReservation(reservation.id)}
-                        className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-50 rounded-md font-medium transition-colors duration-200"
-                      >
-                        Cancel Reservation
-                      </button>
-                    )}
+
+                    <div className="flex gap-4 mt-4">
+                      {reservation.status === 'CONFIRMED' && (
+                        <button
+                          onClick={() => handleCancelReservation(reservation.id)}
+                          className="px-6 py-3 border-2 border-red-500 text-red-500 hover:bg-red-50 rounded-lg font-medium transition-colors duration-200"
+                        >
+                          Cancel Reservation
+                        </button>
+                      )}
+                      {reservation.status === 'PENDING' && (
+                        <Link
+                          href={`/payment/${reservation.id}?checkIn=${encodeURIComponent(formatDate(reservation.checkIn))}&checkOut=${encodeURIComponent(formatDate(reservation.checkOut))}&guests=${reservation.numberOfGuests}`}
+                          className="px-6 py-3 bg-gray-900 text-white hover:bg-primary-dark rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                        >
+                          Make Payment
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 } 

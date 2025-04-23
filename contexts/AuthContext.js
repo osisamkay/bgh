@@ -495,7 +495,8 @@ export function AuthProvider({ children }) {
     userProfile,
     fetchUserProfile,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'ADMIN'
+    isAdmin: user?.role === 'ADMIN',
+    token: typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
   };
 
   return (
