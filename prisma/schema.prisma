@@ -1,273 +1,273 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-    id                 String              @id @default(cuid())
-    name               String
-    email              String              @unique
-    emailVerified      Boolean             @default(false)
-    emailVerifiedAt    DateTime?
-    password           String?
-    role               String
-    firstName          String?
-    lastName           String?
-    streetAddress      String?
-    city               String?
-    postalCode         String?
-    province           String?
-    country            String?
-    termsAccepted      Boolean?
-    phone              String?
-    customerId         String?             @unique
-    createdAt          DateTime            @default(now())
-    updatedAt          DateTime            @updatedAt
-    metadata           String?
-    bookings           Booking[]
-    employeeLogs       EmployeeLog[]
-    notifications      Notification[]
-    payments           Payment[]
-    refunds            Refund[]
-    reportFilters      ReportFilter[]
-    reportLogs         ReportLog[]
-    ResetPasswordToken ResetPasswordToken?
-    scheduledReports   ScheduledReport[]
-    verificationTokens VerificationToken[]
+  id                 String              @id @default(cuid())
+  name               String
+  email              String              @unique
+  emailVerified      Boolean             @default(false)
+  emailVerifiedAt    DateTime?
+  password           String?
+  role               String
+  firstName          String?
+  lastName           String?
+  streetAddress      String?
+  city               String?
+  postalCode         String?
+  province           String?
+  country            String?
+  termsAccepted      Boolean?
+  phone              String?
+  customerId         String?             @unique
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  metadata           String?
+  bookings           Booking[]
+  employeeLogs       EmployeeLog[]
+  notifications      Notification[]
+  payments           Payment[]
+  refunds            Refund[]
+  reportFilters      ReportFilter[]
+  reportLogs         ReportLog[]
+  ResetPasswordToken ResetPasswordToken?
+  scheduledReports   ScheduledReport[]
+  verificationTokens VerificationToken[]
 
-    @@index([email])
-    @@index([role])
-    @@index([emailVerified])
+  @@index([email])
+  @@index([role])
+  @@index([emailVerified])
 }
 
 model ResetPasswordToken {
-    id        String   @id @default(cuid())
-    userId    String   @unique
-    token     String
-    expiresAt DateTime
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Notification {
-    id        String   @id @default(cuid())
-    type      String
-    userId    String
-    bookingId String
-    status    String   @default("PENDING")
-    attempts  Int      @default(0)
-    data      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    booking   Booking  @relation(fields: [bookingId], references: [id])
-    user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  type      String
+  userId    String
+  bookingId String
+  status    String   @default("PENDING")
+  attempts  Int      @default(0)
+  data      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
-    @@index([bookingId])
+  @@index([userId])
+  @@index([bookingId])
 }
 
 model EmployeeLog {
-    id        String   @id @default(cuid())
-    userId    String
-    action    String
-    details   String
-    createdAt DateTime @default(now())
-    user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model Payment {
-    id              String   @id @default(cuid())
-    bookingId       String
-    userId          String
-    amount          Float
-    paymentIntentId String   @unique
-    status          String
-    paymentMethod   String
-    paymentDate     DateTime
-    createdAt       DateTime @default(now())
-    updatedAt       DateTime @updatedAt
-    user            User     @relation(fields: [userId], references: [id])
-    booking         Booking  @relation(fields: [bookingId], references: [id])
+  id              String   @id @default(cuid())
+  bookingId       String
+  userId          String
+  amount          Float
+  paymentIntentId String   @unique
+  status          String
+  paymentMethod   String
+  paymentDate     DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
 
-    @@index([bookingId])
-    @@index([userId])
+  @@index([bookingId])
+  @@index([userId])
 }
 
 model Refund {
-    id        String   @id @default(cuid())
-    bookingId String   @unique
-    userId    String
-    amount    Float
-    reason    String
-    status    String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id])
-    booking   Booking  @relation(fields: [bookingId], references: [id])
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  userId    String
+  amount    Float
+  reason    String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model CheckInDetails {
-    id              String   @id @default(cuid())
-    bookingId       String   @unique
-    roomNumber      String
-    idType          String
-    idNumber        String
-    specialRequests String?
-    checkedInBy     String
-    checkedInAt     DateTime @default(now())
-    createdAt       DateTime @default(now())
-    updatedAt       DateTime @updatedAt
-    booking         Booking  @relation(fields: [bookingId], references: [id])
+  id              String   @id @default(cuid())
+  bookingId       String   @unique
+  roomNumber      String
+  idType          String
+  idNumber        String
+  specialRequests String?
+  checkedInBy     String
+  checkedInAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  booking         Booking  @relation(fields: [bookingId], references: [id])
 }
 
 model Room {
-    id          String    @id @default(cuid())
-    roomNumber  String    @unique
-    type        String
-    status      String    @default("AVAILABLE")
-    price       Float
-    description String?
-    image       String?
-    images      String?
-    amenities   String?
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    bookings    Booking[]
+  id          String    @id @default(cuid())
+  roomNumber  String    @unique
+  type        String
+  status      String    @default("AVAILABLE")
+  price       Float
+  description String?
+  image       String?
+  images      String?
+  amenities   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
 }
 
 model Charge {
-    id          String          @id @default(cuid())
-    bookingId   String
-    description String
-    amount      Float
-    date        DateTime        @default(now())
-    status      String          @default("PENDING")
-    createdAt   DateTime        @default(now())
-    updatedAt   DateTime        @updatedAt
-    booking     Booking         @relation(fields: [bookingId], references: [id])
-    disputes    ChargeDispute[] @relation("ChargeToChargeDispute")
+  id          String          @id @default(cuid())
+  bookingId   String
+  description String
+  amount      Float
+  date        DateTime        @default(now())
+  status      String          @default("PENDING")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  booking     Booking         @relation(fields: [bookingId], references: [id])
+  disputes    ChargeDispute[] @relation("ChargeToChargeDispute")
 }
 
 model ChargeDispute {
-    id         String   @id @default(cuid())
-    bookingId  String
-    notes      String
-    disputedBy String
-    disputedAt DateTime @default(now())
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-    booking    Booking  @relation(fields: [bookingId], references: [id])
-    charges    Charge[] @relation("ChargeToChargeDispute")
+  id         String   @id @default(cuid())
+  bookingId  String
+  notes      String
+  disputedBy String
+  disputedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  charges    Charge[] @relation("ChargeToChargeDispute")
 }
 
 model CheckOutDetails {
-    id           String   @id @default(cuid())
-    bookingId    String   @unique
-    checkedOutBy String
-    checkedOutAt DateTime @default(now())
-    keyReturned  Boolean  @default(true)
-    feedback     String?
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
-    booking      Booking  @relation(fields: [bookingId], references: [id])
+  id           String   @id @default(cuid())
+  bookingId    String   @unique
+  checkedOutBy String
+  checkedOutAt DateTime @default(now())
+  keyReturned  Boolean  @default(true)
+  feedback     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  booking      Booking  @relation(fields: [bookingId], references: [id])
 }
 
 model Booking {
-    id              String           @id @default(cuid())
-    userId          String
-    roomId          String
-    checkInDate     DateTime
-    checkOutDate    DateTime
-    numberOfGuests  Int
-    specialRequests String?
-    status          String           @default("PENDING")
-    totalPrice      Float
-    createdAt       DateTime         @default(now())
-    updatedAt       DateTime         @updatedAt
-    metadata        String? // JSON string for additional data
-    room            Room             @relation(fields: [roomId], references: [id])
-    user            User             @relation(fields: [userId], references: [id])
-    charges         Charge[]
-    disputes        ChargeDispute[]
-    checkInDetails  CheckInDetails?
-    checkOutDetails CheckOutDetails?
-    notifications   Notification[]
-    payment         Payment[]
-    refund          Refund?
+  id              String           @id @default(cuid())
+  userId          String
+  roomId          String
+  checkInDate     DateTime
+  checkOutDate    DateTime
+  numberOfGuests  Int
+  specialRequests String?
+  status          String           @default("PENDING")
+  totalPrice      Float
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  metadata        String?
+  room            Room             @relation(fields: [roomId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  charges         Charge[]
+  disputes        ChargeDispute[]
+  checkInDetails  CheckInDetails?
+  checkOutDetails CheckOutDetails?
+  notifications   Notification[]
+  payment         Payment[]
+  refund          Refund?
 
-    @@index([status])
-    @@index([checkInDate, checkOutDate])
-    @@index([userId])
-    @@index([roomId])
+  @@index([status])
+  @@index([checkInDate, checkOutDate])
+  @@index([userId])
+  @@index([roomId])
 }
 
 model ReportFilter {
-    id        String   @id @default(cuid())
-    name      String
-    filters   String
-    userId    String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  name      String
+  filters   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model ReportLog {
-    id           String   @id @default(cuid())
-    userId       String
-    reportType   String
-    exportStatus String
-    createdAt    DateTime @default(now())
-    user         User     @relation(fields: [userId], references: [id])
+  id           String   @id @default(cuid())
+  userId       String
+  reportType   String
+  exportStatus String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model ScheduledReport {
-    id             String    @id @default(cuid())
-    type           String
-    schedule       String
-    email          String
-    filters        String
-    lastGenerated  DateTime?
-    nextGeneration DateTime
-    userId         String
-    createdAt      DateTime  @default(now())
-    updatedAt      DateTime  @updatedAt
-    user           User      @relation(fields: [userId], references: [id])
+  id             String    @id @default(cuid())
+  type           String
+  schedule       String
+  email          String
+  filters        String
+  lastGenerated  DateTime?
+  nextGeneration DateTime
+  userId         String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model VerificationToken {
-    id        String   @id @default(cuid())
-    token     String   @unique
-    userId    String
-    expiresAt DateTime
-    createdAt DateTime @default(now())
-    user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model Setting {
-    id                 Int      @id @default(autoincrement())
-    emailNotifications Boolean  @default(true)
-    maintenanceMode    Boolean  @default(false)
-    maxBookingsPerUser Int      @default(5)
-    cancellationPolicy String   @default("24 hours")
-    checkInTime        String   @default("14:00")
-    checkOutTime       String   @default("12:00")
-    createdAt          DateTime @default(now())
-    updatedAt          DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  emailNotifications Boolean  @default(true)
+  maintenanceMode    Boolean  @default(false)
+  maxBookingsPerUser Int      @default(5)
+  cancellationPolicy String   @default("24 hours")
+  checkInTime        String   @default("14:00")
+  checkOutTime       String   @default("12:00")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

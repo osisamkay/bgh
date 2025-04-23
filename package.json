@@ -8,7 +8,9 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "test-db": "node -r @babel/register scripts/test-db.js",
-    "reset-db": "taskkill /F /IM node.exe && del prisma\\dev.db && npx prisma migrate reset --force"
+    "reset-db": "npx prisma migrate reset --force && npx prisma db push --force-reset && npx prisma generate && npm run seed",
+    "setup-db": "node scripts/setup-db.js",
+    "seed": "ts-node prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -47,12 +49,16 @@
     "@babel/core": "^7.26.10",
     "@babel/register": "^7.25.9",
     "@types/uuid": "^10.0.0",
+    "@types/bcryptjs": "^2.4.0",
+    "@types/node": "^20.0.0",
     "autoprefixer": "10.4.16",
     "postcss": "8.4.31",
     "prisma": "^6.6.0",
-    "tailwindcss": "3.3.5"
+    "tailwindcss": "3.3.5",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "ts-node prisma/seed.ts"
   }
 }

@@ -1,108 +1,174 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+// Seed script to populate database with initial data
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Clean up existing data
-  await prisma.booking.deleteMany();
-  await prisma.room.deleteMany();
-  await prisma.user.deleteMany();
+  console.log('Starting database seeding...');
 
   // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.create({
-    data: {
+  const adminPassword = await bcrypt.hash('Admin123!', 10);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@bgh.com' },
+    update: {},
+    create: {
+      email: 'admin@bgh.com',
       name: 'Admin User',
-      email: 'admin@example.com',
-      password: adminPassword,
-      role: 'ADMIN',
-      emailVerified: true,
       firstName: 'Admin',
       lastName: 'User',
-      termsAccepted: true,
-    },
+      password: adminPassword,
+      role: 'ADMIN',
+      emailVerified: true
+    }
   });
+  console.log('Admin user created:', admin.email);
+
+  // Create regular user
+  const userPassword = await bcrypt.hash('User123!', 10);
+  const user = await prisma.user.upsert({
+    where: { email: 'user@example.com' },
+    update: {},
+    create: {
+      email: 'user@example.com',
+      name: 'Regular User',
+      firstName: 'Regular',
+      lastName: 'User',
+      password: userPassword,
+      role: 'USER',
+      emailVerified: true,
+      streetAddress: '123 Main St',
+      city: 'Anytown',
+      postalCode: '12345',
+      province: 'State',
+      country: 'Country',
+      termsAccepted: true
+    }
+  });
+  console.log('Regular user created:', user.email);
 
   // Create sample rooms
-  const rooms = await Promise.all([
-    prisma.room.create({
+  const roomTypes = ['STANDARD', 'DELUXE', 'SUITE', 'EXECUTIVE', 'PRESIDENTIAL'];
+  const roomStatuses = ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'UNAVAILABLE'];
+  
+  // Delete existing rooms first
+  await prisma.room.deleteMany({});
+  
+  // Create 10 sample rooms
+  for (let i = 1; i <= 10; i++) {
+    const roomType = roomTypes[Math.floor(Math.random() * roomTypes.length)];
+    const roomStatus = i <= 7 ? 'AVAILABLE' : roomStatuses[Math.floor(Math.random() * roomStatuses.length)];
+    
+    // Set price based on room type
+    let price = 100; // Base price for STANDARD
+    if (roomType === 'DELUXE') price = 150;
+    if (roomType === 'SUITE') price = 200;
+    if (roomType === 'EXECUTIVE') price = 300;
+    if (roomType === 'PRESIDENTIAL') price = 500;
+    
+    // Randomize price slightly
+    price += Math.floor(Math.random() * 50);
+    
+    const roomNumber = `${Math.floor(Math.random() * 5) + 1}${String(i).padStart(2, '0')}`;
+    
+    const room = await prisma.room.create({
       data: {
-        roomNumber: '101',
-        type: 'STANDARD',
-        status: 'AVAILABLE',
-        price: 100.00,
-        description: 'Comfortable standard room with a queen bed',
-        image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1920&q=80',
-        images: JSON.stringify([
-          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1631049552057-403cdb8f0658?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1631049421450-348ccd7f8949?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1631049035182-249067d7618e?auto=format&fit=crop&w=1920&q=80'
-        ]),
-        amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Private Bathroom']),
-      },
-    }),
-    prisma.room.create({
-      data: {
-        roomNumber: '102',
-        type: 'DELUXE',
-        status: 'AVAILABLE',
-        price: 150.00,
-        description: 'Spacious deluxe room with a king bed and city view',
-        image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1920&q=80',
-        images: JSON.stringify([
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1582719508461-957e41e34d99?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1582719478501-0f6e0d2b7a3b?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1582719478501-0f6e0d2b7a3c?auto=format&fit=crop&w=1920&q=80'
-        ]),
-        amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Private Bathroom', 'Mini Bar', 'City View']),
-      },
-    }),
-    prisma.room.create({
-      data: {
-        roomNumber: '201',
-        type: 'SUITE',
-        status: 'AVAILABLE',
-        price: 250.00,
-        description: 'Luxury suite with separate living area and ocean view',
-        image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1920&q=80',
-        images: JSON.stringify([
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1590490359683-658d3d23f972?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1590490360787-3a26f1d75fd6?auto=format&fit=crop&w=1920&q=80',
-          'https://images.unsplash.com/photo-1590490360538-eb20758a6f94?auto=format&fit=crop&w=1920&q=80'
-        ]),
-        amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Private Bathroom', 'Mini Bar', 'Ocean View', 'Living Room', 'Kitchen']),
-      },
-    }),
-  ]);
+        roomNumber,
+        type: roomType,
+        price,
+        status: roomStatus,
+        description: `A beautiful ${roomType.toLowerCase()} room with all amenities.`,
+        image: `https://source.unsplash.com/random/800x600/?hotel,room,${roomType.toLowerCase()}`,
+        amenities: 'WiFi, TV, Air Conditioning, Mini Bar, Safe, Coffee Maker'
+      }
+    });
+    
+    console.log(`Room created: ${room.roomNumber} (${room.type})`);
+  }
 
-  // Create a sample booking
-  const booking = await prisma.booking.create({
-    data: {
-      userId: admin.id,
-      roomId: rooms[0].id,
-      checkInDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      checkOutDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
-      numberOfGuests: 2,
-      specialRequests: 'Early check-in requested',
-      status: 'CONFIRMED',
-      totalPrice: 300.00,
-    },
+  // Create sample bookings
+  // First delete existing bookings
+  await prisma.booking.deleteMany({});
+  
+  // Get all available rooms
+  const availableRooms = await prisma.room.findMany({
+    where: { status: 'AVAILABLE' }
   });
-
-  console.log('Seed data created successfully:', {
-    admin: { id: admin.id, email: admin.email },
-    rooms: rooms.map(room => ({ id: room.id, number: room.roomNumber })),
-    booking: { id: booking.id, status: booking.status },
-  });
+  
+  if (availableRooms.length > 0) {
+    // Create a few bookings
+    const today = new Date();
+    
+    // Booking 1: Upcoming booking
+    const checkInDate1 = new Date(today);
+    checkInDate1.setDate(today.getDate() + 5); // 5 days from now
+    
+    const checkOutDate1 = new Date(checkInDate1);
+    checkOutDate1.setDate(checkInDate1.getDate() + 3); // 3-day stay
+    
+    await prisma.booking.create({
+      data: {
+        userId: user.id,
+        roomId: availableRooms[0].id,
+        checkInDate: checkInDate1,
+        checkOutDate: checkOutDate1,
+        numberOfGuests: 2,
+        specialRequests: 'Late check-in, around 8pm',
+        status: 'CONFIRMED',
+        totalPrice: availableRooms[0].price * 3 // 3-day stay
+      }
+    });
+    console.log('Created upcoming booking');
+    
+    // Booking 2: Current booking (checked in)
+    const checkInDate2 = new Date(today);
+    checkInDate2.setDate(today.getDate() - 1); // Yesterday
+    
+    const checkOutDate2 = new Date(today);
+    checkOutDate2.setDate(today.getDate() + 2); // 3-day stay total
+    
+    await prisma.booking.create({
+      data: {
+        userId: user.id,
+        roomId: availableRooms[1].id,
+        checkInDate: checkInDate2,
+        checkOutDate: checkOutDate2,
+        numberOfGuests: 1,
+        specialRequests: 'Extra towels',
+        status: 'CHECKED_IN',
+        totalPrice: availableRooms[1].price * 3 // 3-day stay
+      }
+    });
+    console.log('Created current (checked-in) booking');
+    
+    // Booking 3: Pending booking
+    const checkInDate3 = new Date(today);
+    checkInDate3.setDate(today.getDate() + 10); // 10 days from now
+    
+    const checkOutDate3 = new Date(checkInDate3);
+    checkOutDate3.setDate(checkInDate3.getDate() + 5); // 5-day stay
+    
+    await prisma.booking.create({
+      data: {
+        userId: user.id,
+        roomId: availableRooms[2].id,
+        checkInDate: checkInDate3,
+        checkOutDate: checkOutDate3,
+        numberOfGuests: 4,
+        specialRequests: 'High floor room',
+        status: 'PENDING',
+        totalPrice: availableRooms[2].price * 5 // 5-day stay
+      }
+    });
+    console.log('Created pending booking');
+  }
+  
+  console.log('Database seeding completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('Error seeding data:', e);
+    console.error('Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

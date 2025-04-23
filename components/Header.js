@@ -28,18 +28,18 @@ const Header = () => {
           <Link href="/" className="flex items-center">
             <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
               {/* Use the actual BGH logo from the images directory */}
-              <Image 
-                src="/images/logo.svg" 
-                alt="Best Garden Hotel" 
-                width={100} 
-                height={100} 
+              <Image
+                src="/images/logo.svg"
+                alt="Best Garden Hotel"
+                width={100}
+                height={100}
               />
             </div>
           </Link>
-          
+
           {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 rounded-md text-gray-900 hover:text-white"
+          <button
+            className="md:hidden p-2 rounded-md text-gray-900 ml-auto hover:text-white"
             onClick={() => {
               const mobileMenu = document.getElementById('mobile-menu');
               if (mobileMenu) {
@@ -52,7 +52,7 @@ const Header = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-4 lg:space-x-8 uppercase text-sm lg:text-base font-semibold">
             <Link href="#offers" className="text-gray-900 hover:text-white">OFFERS</Link>
@@ -61,7 +61,7 @@ const Header = () => {
             <Link href="#events" className="text-gray-900 hover:text-white">GROUP & EVENTS</Link>
             <Link href="/check-reservation" className="text-gray-900 hover:text-white">CHECK RESERVATIONS</Link>
           </nav>
-          
+
           {/* Book Button */}
           <Link href="/search">
             <button className="hidden md:block bg-gray-900 text-white uppercase text-sm lg:text-base font-semibold py-2 px-4 lg:px-6 rounded">
@@ -69,7 +69,7 @@ const Header = () => {
             </button>
           </Link>
         </div>
-        
+
         {/* Mobile Menu */}
         <div id="mobile-menu" className="hidden md:hidden px-4 py-2 mt-2 bg-amber-400 border-t border-amber-600">
           <nav className="flex flex-col space-y-2 uppercase text-sm font-semibold">
