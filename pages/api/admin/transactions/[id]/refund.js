@@ -1,8 +1,10 @@
 // pages/api/admin/transactions/[id]/refund.js
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/utils/auth';
+import Stripe from 'stripe';
 
 export default async function handler(req, res) {
+    // Only allow POST method
     if (req.method !== 'POST') {
         return res.status(405).json({
             success: false,
@@ -11,25 +13,10 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { id } = req.query; // Payment ID
-        const { amount, reason } = req.body;
+        // Get payment ID from URL
+        const { id } = req.query;
 
-        if (!id || !amount || !reason) {
-            return res.status(400).json({
-                success: false,
-                message: 'Payment ID, amount, and reason are required'
-            });
-        }
-
-        // Validate amount is a number
-        if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Amount must be a positive number'
-            });
-        }
-
-        // Authenticate admin
+        // Get token from header
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({
@@ -39,23 +26,35 @@ export default async function handler(req, res) {
         }
 
         const token = authHeader.split(' ')[1];
-        const admin = await verifyToken(token);
 
-        if (!admin) {
+        // Verify token and get user
+        const user = await verifyToken(token);
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid or expired token'
             });
         }
 
-        if (admin.role !== 'ADMIN') {
+        // Check if user is admin
+        if (user.role !== 'ADMIN') {
             return res.status(403).json({
                 success: false,
                 message: 'Admin access required'
             });
         }
 
-        // Find the payment
+        // Get request body
+        const { amount, reason } = req.body;
+
+        if (!amount || !reason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Amount and reason are required'
+            });
+        }
+
+        // Find the payment to refund
         const payment = await prisma.payment.findUnique({
             where: { id },
             include: {
@@ -70,69 +69,67 @@ export default async function handler(req, res) {
             });
         }
 
-        // Validate refund amount doesn't exceed payment amount
-        if (parseFloat(amount) > payment.amount) {
+        if (payment.status !== 'COMPLETED' && payment.status !== 'SUCCEEDED') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only completed payments can be refunded'
+            });
+        }
+
+        if (amount > payment.amount) {
             return res.status(400).json({
                 success: false,
                 message: 'Refund amount cannot exceed payment amount'
             });
         }
 
-        // Check if payment has already been fully refunded
-        const existingRefunds = await prisma.refund.findMany({
-            where: { bookingId: payment.bookingId }
+        // Initialize Stripe
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+        // Process refund with Stripe
+        const refund = await stripe.refunds.create({
+            payment_intent: payment.paymentIntentId,
+            amount: Math.round(amount * 100), // Convert to cents
+            reason: 'requested_by_customer'
         });
 
-        const alreadyRefunded = existingRefunds.reduce((sum, refund) => sum + refund.amount, 0);
-        const refundableAmount = payment.amount - alreadyRefunded;
-
-        if (parseFloat(amount) > refundableAmount) {
-            return res.status(400).json({
-                success: false,
-                message: `Only $${refundableAmount.toFixed(2)} is available for refund`
-            });
-        }
-
-        // Create refund record
-        const refund = await prisma.refund.create({
+        // Create refund record in database
+        const refundRecord = await prisma.refund.create({
             data: {
                 bookingId: payment.bookingId,
                 userId: payment.userId,
                 amount: parseFloat(amount),
                 reason,
                 status: 'COMPLETED'
-            },
-            include: {
-                booking: true,
-                user: true
             }
         });
 
-        // Update booking status if fully refunded
-        if (parseFloat(amount) + alreadyRefunded >= payment.amount) {
+        // Update booking status if it's a full refund
+        if (parseFloat(amount) === payment.amount) {
             await prisma.booking.update({
                 where: { id: payment.bookingId },
-                data: { status: 'REFUNDED' }
+                data: { status: 'CANCELLED' }
             });
         }
-
-        // In a real application, you would also handle the actual refund with your payment provider here
-        // e.g., Stripe refund API call
 
         return res.status(200).json({
             success: true,
             message: 'Refund processed successfully',
-            data: {
-                id: refund.id,
-                amount: refund.amount,
-                reason: refund.reason,
-                status: refund.status,
-                bookingId: refund.bookingId,
-                createdAt: refund.createdAt
-            }
+            data: refundRecord
         });
+
     } catch (error) {
         console.error('Error processing refund:', error);
+        
+        // Handle Stripe specific errors
+        if (error.type === 'StripeInvalidRequestError') {
+            return res.status(400).json({
+                success: false,
+                message: error.message || 'Invalid refund request',
+                error: error.message
+            });
+        }
+        
         return res.status(500).json({
             success: false,
             message: 'Error processing refund',
