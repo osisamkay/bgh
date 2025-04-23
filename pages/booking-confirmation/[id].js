@@ -62,7 +62,7 @@ const BookingConfirmation = () => {
 
             try {
                 setIsLoading(true);
-                const token = localStorage.getItem('auth_token');
+                const token = localStorage.getItem('access_token');
                 if (!token) {
                     throw new Error('No authentication token found');
                 }

@@ -1088,10 +1088,10 @@ const Payment = () => {
                                     <p>1 x Deluxe King Suite (9 nights)</p>
                                     <p>${bookingDetails.pricing.basePrice.toFixed(2)}</p>
                                 </div>
-                                <div className="flex justify-between text-green-600">
+                                {/* <div className="flex justify-between text-green-600">
                                     <p>5% Senior Discount</p>
                                     <p>-${bookingDetails.pricing.seniorDiscount.toFixed(2)}</p>
-                                </div>
+                                </div> */}
                                 <div className="flex justify-between">
                                     <p>Taxes and Fees (GST/HST 13%)</p>
                                     <p>${bookingDetails.pricing.taxes.toFixed(2)}</p>
