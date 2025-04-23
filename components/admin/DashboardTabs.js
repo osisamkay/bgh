@@ -1,4 +1,3 @@
-// components/admin/DashboardTabs.js
 import React from 'react';
 
 const DashboardTabs = ({ selectedTab, onSelectTab, tabs }) => {

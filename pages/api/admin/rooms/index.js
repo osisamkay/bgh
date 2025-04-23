@@ -3,161 +3,145 @@ import { verifyToken } from '@/utils/auth';
 
 // API endpoint for listing all rooms and creating new rooms
 export default async function handler(req, res) {
-  // Check authorization
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Authentication required' });
-  }
+  try {
+    // Check authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
 
-  const token = authHeader.split(' ')[1];
-  const user = await verifyToken(token);
+    const token = authHeader.split(' ')[1];
+    const user = await verifyToken(token);
 
-  // Check if user exists and is an admin
-  if (!user || user.role !== 'ADMIN') {
-    return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
+    // Check if user exists and is an admin
+    if (!user || user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
 
-  // Handle different HTTP methods
-  switch (req.method) {
-    case 'GET':
-      return getRooms(req, res);
-    case 'POST':
-      return createRoom(req, res);
-    default:
-      return res.status(405).json({ success: false, message: 'Method not allowed' });
+    // Handle different HTTP methods
+    switch (req.method) {
+      case 'GET':
+        return getRooms(req, res);
+      case 'POST':
+        return createRoom(req, res);
+      default:
+        return res.status(405).json({ success: false, message: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('Error in rooms API:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
 
-// Get all rooms with pagination and filtering
+// Get rooms with filtering and pagination
 async function getRooms(req, res) {
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      status, 
-      type, 
-      search,
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      type = '',
+      status = '',
       sortBy = 'roomNumber',
       sortOrder = 'asc'
     } = req.query;
-    
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
 
-    // Build filter conditions
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build where clause for filtering
     const where = {};
-    
-    if (status) {
-      where.status = status;
-    }
-    
-    if (type) {
-      where.type = type;
-    }
-    
     if (search) {
       where.OR = [
         { roomNumber: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } }
       ];
     }
+    if (type) where.type = type;
+    if (status) where.status = status;
 
-    // Get rooms with pagination
-    const rooms = await prisma.room.findMany({
-      where,
-      skip,
-      take: limitNum,
-      orderBy: {
-        [sortBy]: sortOrder.toLowerCase() === 'desc' ? 'desc' : 'asc'
-      }
-    });
-
-    // Get total count for pagination
-    const totalRooms = await prisma.room.count({ where });
-    const totalPages = Math.ceil(totalRooms / limitNum);
+    // Get rooms with total count
+    const [rooms, total] = await Promise.all([
+      prisma.room.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder.toLowerCase()
+        },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.room.count({ where })
+    ]);
 
     return res.status(200).json({
       success: true,
       data: rooms,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
-        totalItems: totalRooms,
-        totalPages
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
       }
     });
   } catch (error) {
     console.error('Error getting rooms:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch rooms',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    return res.status(500).json({ success: false, message: 'Failed to get rooms' });
   }
 }
 
 // Create a new room
 async function createRoom(req, res) {
   try {
-    const { 
-      roomNumber, 
-      type, 
-      price, 
-      description = '', 
-      image = '', 
-      images = '',
-      amenities = '',
-      status = 'AVAILABLE'
+    const {
+      roomNumber,
+      type,
+      price,
+      description,
+      amenities,
+      image,
+      images
     } = req.body;
 
     // Validate required fields
-    if (!roomNumber) {
-      return res.status(400).json({ success: false, message: 'Room number is required' });
+    if (!roomNumber || !type || !price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Room number, type, and price are required'
+      });
     }
 
-    if (!type) {
-      return res.status(400).json({ success: false, message: 'Room type is required' });
-    }
-
-    if (!price || isNaN(price) || price <= 0) {
-      return res.status(400).json({ success: false, message: 'Valid price is required' });
-    }
-
-    // Check if room with this number already exists
+    // Check if room number already exists
     const existingRoom = await prisma.room.findUnique({
       where: { roomNumber }
     });
 
     if (existingRoom) {
-      return res.status(400).json({ success: false, message: 'Room with this number already exists' });
+      return res.status(400).json({
+        success: false,
+        message: 'Room number already exists'
+      });
     }
 
     // Create new room
-    const newRoom = await prisma.room.create({
+    const room = await prisma.room.create({
       data: {
         roomNumber,
         type,
         price: parseFloat(price),
         description,
+        amenities: amenities ? JSON.stringify(amenities) : null,
         image,
-        images,
-        amenities,
-        status
+        images: images ? JSON.stringify(images) : null,
+        status: 'AVAILABLE'
       }
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Room created successfully',
-      data: newRoom
+      data: room
     });
   } catch (error) {
     console.error('Error creating room:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create room',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    return res.status(500).json({ success: false, message: 'Failed to create room' });
   }
 }

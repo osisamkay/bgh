@@ -52,7 +52,7 @@ const BookingsManager = ({ data, isLoading, error, onRefresh }) => {
         });
     };
 
-    console.log(data)
+
 
     // Handle delete confirmation
     const handleDelete = () => {

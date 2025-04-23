@@ -6,6 +6,7 @@ import * as adminApi from '../../services/adminApi';
 import DashboardHeader from './DashboardHeader';
 import DashboardTabs from './DashboardTabs';
 import DashboardOverview from './DashboardOverview';
+import RoomManager from './RoomManager';
 import BookingsManager from './BookingsManager';
 import UsersManager from './UsersManager';
 import ReportsManager from './ReportsManager';
@@ -89,7 +90,7 @@ const AdminDashboard = () => {
       <DashboardTabs
         selectedTab={selectedTab}
         onSelectTab={setSelectedTab}
-        tabs={['overview', 'bookings', 'users', 'transactions', 'reports', 'settings']}
+        tabs={['overview', 'rooms', 'bookings', 'users', 'transactions', 'reports', 'settings']}
       />
 
       {/* Tab Content */}
@@ -106,6 +107,10 @@ const AdminDashboard = () => {
         ) : (
           <DashboardOverview data={dashboardData?.data} />
         )
+      )}
+
+      {selectedTab === 'rooms' && (
+        <RoomManager />
       )}
 
       {selectedTab === 'bookings' && (

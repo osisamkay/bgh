@@ -62,7 +62,7 @@ export default function Search() {
           throw new Error('Failed to fetch rooms');
         }
         const data = await response.json();
-
+        console.log(data);
         // Initialize with empty arrays if data is undefined
         const roomsData = data?.data || [];
         setAllRooms(roomsData);
@@ -662,12 +662,15 @@ export default function Search() {
                         onClick={() => handleRoomSelect(room)}
                       >
                         <Image
-                          src={room.images?.[0] || '/images/room-placeholder.jpg'}
+                          src={room.images?.[0] || room.image || '/images/room-placeholder.svg'}
                           alt={room.type}
                           fill
                           style={{ objectFit: 'cover' }}
                           priority={room.id <= 2}
                           className="hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.src = '/images/room-placeholder.svg';
+                          }}
                         />
                         {room.images?.length > 1 && (
                           <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
@@ -686,7 +689,7 @@ export default function Search() {
 
                         {/* Amenities */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {room.amenities.map((amenity, index) => (
+                          {(Array.isArray(room?.amenities) ? room.amenities : []).map((amenity, index) => (
                             <span
                               key={index}
                               className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
