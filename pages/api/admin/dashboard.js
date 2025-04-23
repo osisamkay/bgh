@@ -44,10 +44,10 @@ export default async function handler(req, res) {
 
             // Total revenue with SQL aggregation
             prisma.$queryRaw`
-        SELECT SUM(totalPrice) as total
-        FROM Booking
-        WHERE status = 'CONFIRMED'
-      `,
+                SELECT SUM("totalPrice") as total
+                FROM "public"."Booking"
+                WHERE "status" = 'CONFIRMED'
+            `,
 
             // Occupancy data
             prisma.$transaction([
@@ -137,13 +137,13 @@ export default async function handler(req, res) {
 
         const monthlyRevenue = await prisma.$queryRaw`
         SELECT 
-            strftime('%Y-%m', checkInDate) as month,
-            SUM(totalPrice) as revenue
-        FROM Booking
+            TO_CHAR(DATE_TRUNC('month', "checkInDate"), 'YYYY-MM') as month,
+            SUM("totalPrice") as revenue
+        FROM "public"."Booking"
         WHERE 
-            status = 'CONFIRMED' AND
-            checkInDate >= ${twelveMonthsAgo}
-        GROUP BY strftime('%Y-%m', checkInDate)
+            "status" = 'CONFIRMED' AND
+            "checkInDate" >= ${twelveMonthsAgo}
+        GROUP BY DATE_TRUNC('month', "checkInDate")
         ORDER BY month ASC
         `;
 
