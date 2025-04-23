@@ -318,11 +318,12 @@ export function AuthProvider({ children }) {
       }
 
       addNotification('Signup successful! Please check your email to verify your account.', 'success');
-      router.push('/verify-email');
+      // router.push('/verify-email');
 
       return {
         success: true,
-        message: 'Signup successful'
+        message: 'Signup successful',
+        data: data
       };
     } catch (error) {
       console.error('Signup error:', error);

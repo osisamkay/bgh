@@ -1,48 +1,38 @@
-import { sendReservationEmail } from '../../utils/emailService';
+import { sendVerificationEmail } from '@/utils/email';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
-
+  
   try {
-    // Create a test reservation object
-    const testReservation = {
-      to: 'test@example.com',
-      name: 'John Doe',
-      roomType: 'Deluxe Suite',
-      checkIn: new Date('2024-04-01'),
-      checkOut: new Date('2024-04-05'),
-      guests: 2,
-      totalPrice: 1200.00,
-      reservationId: 'TEST-' + Date.now(),
-      specialRequests: 'Early check-in requested'
-    };
-
-    // Send test email
-    const emailResult = await sendReservationEmail(testReservation);
+    const { email = 'test@example.com' } = req.body;
     
-    console.log('Ethereal Email Account:', {
-      user: emailResult.etherealUser,
-      pass: emailResult.etherealPass,
-      previewUrl: emailResult.previewUrl
+    // Generate a test token
+    const testToken = 'test-token-' + Math.random().toString(36).substring(2, 15);
+    
+    // Send a test verification email
+    const result = await sendVerificationEmail({
+      to: email,
+      token: testToken,
+      name: 'Test User'
     });
-
+    
     return res.status(200).json({
       success: true,
       message: 'Test email sent successfully',
-      emailDetails: {
-        previewUrl: emailResult.previewUrl,
-        messageId: emailResult.messageId,
-        etherealUser: emailResult.etherealUser,
-        etherealPass: emailResult.etherealPass
-      }
+      previewUrl: result.previewUrl,
+      messageId: result.messageId,
+      etherealUser: result.etherealUser,
+      etherealPass: result.etherealPass,
+      details: result
     });
   } catch (error) {
-    console.error('Error in test-email endpoint:', error);
+    console.error('Test email error:', error);
     return res.status(500).json({
       success: false,
+      message: 'Failed to send test email',
       error: error.message
     });
   }
-} 
+}

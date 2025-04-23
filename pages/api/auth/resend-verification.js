@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/utils/auth';
 import { sendVerificationEmail } from '@/utils/email';
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -26,35 +27,51 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, message: 'Email is already verified' });
         }
 
-        // Generate verification token and send email
-        const verificationToken = await prisma.verificationToken.create({
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        // Delete any existing verification tokens for this user
+        await prisma.verificationToken.deleteMany({
+            where: { userId: user.id }
+        });
+
+        // Create new verification token
+        const newToken = await prisma.verificationToken.create({
             data: {
-                token: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+                token: verificationToken,
                 userId: user.id,
-                expires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+                expiresAt: expiresAt
             }
         });
 
         // Send verification email
-        await sendVerificationEmail(user.email, verificationToken.token);
+        const emailResult = await sendVerificationEmail({
+            to: user.email,
+            token: verificationToken,
+            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User'
+        });
 
         // In development, return the verification URL for preview
-        let previewUrl;
-        if (process.env.NODE_ENV === 'development') {
-            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
-            previewUrl = `${baseUrl}/verify-email?token=${verificationToken.token}`;
+        if (process.env.NODE_ENV === 'development' && emailResult?.previewUrl) {
+            return res.status(200).json({
+                success: true,
+                message: 'Verification email sent successfully',
+                previewUrl: emailResult.previewUrl
+            });
         }
 
         return res.status(200).json({
             success: true,
             message: 'Verification email sent successfully',
-            previewUrl
+            emailDetails: emailResult
         });
     } catch (error) {
         console.error('Resend verification error:', error);
         return res.status(500).json({
             success: false,
-            message: 'An error occurred while resending verification email'
+            message: 'An error occurred while resending verification email',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
-} 
+}

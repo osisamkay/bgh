@@ -1,7 +1,7 @@
 // pages/api/auth/verify-email.js
 import prisma from '@/lib/prisma';
 import { generateAccessToken, generateRefreshToken } from '@/utils/auth';
-import { sendWelcomeEmail } from '@/utils/emailService';
+import { sendWelcomeEmail } from '@/utils/email';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     try {
       await sendWelcomeEmail({
         to: updatedUser.email,
-        name: `${updatedUser.firstName} ${updatedUser.lastName}`
+        name: `${updatedUser.firstName} ${updatedUser.lastName}` || updatedUser.name || 'Valued Customer'
       });
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);

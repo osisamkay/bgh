@@ -64,22 +64,8 @@ export const authenticateUser = async (email, password) => {
     };
 
     // Generate tokens
-    const accessToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role || 'USER',
-        emailVerified: user.emailVerified || false
-      },
-      JWT_SECRET,
-      { expiresIn: '15m' }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user.id);
 
     // Check if email verification is required
     if (!user.emailVerified) {
@@ -319,6 +305,15 @@ export const registerUser = async (userData) => {
   }
 };
 
+// Generate refresh token - ADDED FUNCTION
+export const generateRefreshToken = (userId) => {
+  return jwt.sign(
+    { userId },
+    JWT_SECRET,
+    { expiresIn: '7d' } // 7 days
+  );
+};
+
 // Verify refresh token and generate new access token
 export const verifyRefreshToken = async (refreshToken) => {
   if (!refreshToken) return null;
@@ -345,16 +340,7 @@ export const verifyRefreshToken = async (refreshToken) => {
     if (!user) return null;
 
     // Generate new access token
-    const accessToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role || 'USER',
-        emailVerified: user.emailVerified || false
-      },
-      JWT_SECRET,
-      { expiresIn: '15m' }
-    );
+    const accessToken = generateAccessToken(user);
 
     return {
       user,

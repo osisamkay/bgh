@@ -196,18 +196,18 @@ const Register = () => {
         });
 
         if (result.success) {
-          // Set email preview URL if available
-          if (result.emailDetails?.previewUrl) {
-            setEmailPreviewUrl(result.emailDetails.previewUrl);
-            // Delay redirect to allow user to see the email preview
-            setTimeout(() => {
-              // Redirect admin users to dashboard, others to login
-              router.push(result.isAdmin ? '/admin/dashboard' : '/login');
-            }, 5000);
+          const emailPreviewUrl = result.data.emailDetails?.previewUrl;
+          const redirectPath = result.isAdmin ? '/admin/dashboard' : '/login';
+
+          // Update email preview URL if available
+          if (emailPreviewUrl) {
+            setEmailPreviewUrl(emailPreviewUrl);
+            // Wait for user to see email preview before redirect
+            setTimeout(() => router.push(redirectPath), 5000000000);
           } else {
-            // Redirect admin users to dashboard, others to login
-            router.push(result.isAdmin ? '/admin/dashboard' : '/login');
+            router.push(redirectPath);
           }
+
           addNotification('Registration successful! Please check your email to verify your account.', 'success');
         } else {
           setErrors({ submit: result.message });

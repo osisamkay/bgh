@@ -75,45 +75,55 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export async function sendVerificationEmail(email, token) {
+// FIXED FUNCTION: Now accepts object parameter and always returns a value
+export async function sendVerificationEmail({ to, token, name }) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001';
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
 
-  // If we're in development, just log the URL
+  // Always log the URL in both development and production for debugging
+  console.log('Verification URL:', verificationUrl);
+  
+  // In development, use the createTransporter function to send mail via Ethereal
   if (process.env.NODE_ENV === 'development') {
-    console.log('Verification URL:', verificationUrl);
-    return;
+    try {
+      const result = await sendEmail({
+        to,
+        subject: 'Verify your email address - Best Garden Hotel',
+        html: getVerificationEmailTemplate({ name, verificationUrl })
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Error sending verification email via Ethereal:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || '"BGH Support" <support@bestgardenhotel.com>',
-    to: email,
-    subject: 'Verify your email address',
-    html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #333;">Verify your email address</h2>
-                <p style="color: #666; line-height: 1.5;">
-                    Thank you for signing up! Please click the button below to verify your email address.
-                </p>
-                <div style="margin: 30px 0;">
-                    <a href="${verificationUrl}" 
-                       style="background-color: #4F46E5; color: white; padding: 12px 24px; 
-                              text-decoration: none; border-radius: 4px; display: inline-block;">
-                        Verify Email
-                    </a>
-                </div>
-                <p style="color: #666; line-height: 1.5;">
-                    If you didn't request this email, you can safely ignore it.
-                </p>
-                <p style="color: #666; line-height: 1.5;">
-                    Or copy and paste this link into your browser:<br>
-                    <span style="color: #4F46E5;">${verificationUrl}</span>
-                </p>
-            </div>
-        `
-  };
+  // In production, use the configured SMTP service
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"BGH Support" <support@bestgardenhotel.com>',
+      to,
+      subject: 'Verify your email address',
+      html: getVerificationEmailTemplate({ name, verificationUrl })
+    };
 
-  await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
+    
+    return {
+      success: true,
+      messageId: 'production_email'
+    };
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 }
 
 // Send welcome email using template
@@ -198,4 +208,4 @@ export const sendPasswordResetEmail = async ({ to, token, name }) => {
       error: error.message
     };
   }
-}; 
+};

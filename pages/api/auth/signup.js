@@ -90,8 +90,8 @@ export default async function handler(req, res) {
 
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const tokenExpiry = new Date();
-    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token valid for 24 hours
+    // FIXED: Set expiry to exactly 24 hours from now
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Store verification token
     await prisma.verificationToken.create({
@@ -111,9 +111,10 @@ export default async function handler(req, res) {
         name: `${firstName} ${lastName}`
       });
 
-      if (!emailResult.success) {
-        console.error('Failed to send verification email:', emailResult.error);
+      if (!emailResult || !emailResult.success) {
+        console.error('Failed to send verification email:', emailResult?.error || 'Unknown error');
         return res.status(200).json({
+          success: true,
           message: 'User registered successfully, but verification email could not be sent.',
           details: 'Please contact support to verify your email address.',
           userId: user.id,
@@ -123,6 +124,7 @@ export default async function handler(req, res) {
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       return res.status(200).json({
+        success: true,
         message: 'User registered successfully, but verification email could not be sent.',
         details: 'Please contact support to verify your email address.',
         userId: user.id,
@@ -150,4 +152,4 @@ export default async function handler(req, res) {
       details: error.message || 'An unexpected error occurred. Please try again later.'
     });
   }
-} 
+}
